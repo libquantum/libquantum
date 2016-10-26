@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define pi 3.141592654
 
@@ -124,6 +125,8 @@ int main(int argc, char **argv)
 {
   quantum_reg reg;
   int i, N, width=0;
+
+  srandom(time(0));
 
   if(argc==1)
     {

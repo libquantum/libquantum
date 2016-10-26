@@ -29,6 +29,7 @@
 #include "qureg.h"
 #include "config.h"
 #include "complex.h"
+#include "objcode.h"
 
 /* Convert a vector to a quantum register */
 
@@ -92,7 +93,7 @@ quantum_matrix2qureg(quantum_matrix *m, int width)
 
   /* Initialize the PRNG */
 
-  srandom(time(0));
+  /*  srandom(time(0)); */
 
   return reg;
 }
@@ -103,6 +104,7 @@ quantum_reg
 quantum_new_qureg(MAX_UNSIGNED initval, int width)
 {
   quantum_reg reg;
+  char *c;
 
   reg.width = width;
   reg.size = 1;
@@ -136,6 +138,17 @@ quantum_new_qureg(MAX_UNSIGNED initval, int width)
   /* Initialize the PRNG */
 
   srandom(time(0));
+
+  c = getenv("QUOBFILE");
+
+  if(c)
+    {
+      quantum_objcode_start();
+      quantum_objcode_file(c);
+      atexit((void *) &quantum_objcode_exit);
+    }
+
+  quantum_objcode_put(INIT, initval);
 
   return reg;
 }
@@ -199,7 +212,12 @@ quantum_print_qureg(quantum_reg reg)
 	     quantum_imag(reg.node[i].amplitude), reg.node[i].state, 
 	     quantum_prob_inline(reg.node[i].amplitude));
       for(j=reg.width-1;j>=0;j--)
-	printf("%i", ((((MAX_UNSIGNED) 1 << j) & reg.node[i].state) > 0));
+	{
+	  if(j % 4 == 3)
+	    printf(" ");
+	  printf("%i", ((((MAX_UNSIGNED) 1 << j) & reg.node[i].state) > 0));
+	}
+
       printf(">)\n");
     }
 
@@ -254,4 +272,54 @@ quantum_print_hash(quantum_reg reg)
 	       reg.node[reg.hash[i]-1].state);
     }
 
+}
+
+/* Compute the Kronecker product of two quantum registers */
+
+quantum_reg
+quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
+{
+  int i,j;
+  quantum_reg reg;
+  
+  reg.width = reg1->width+reg2->width;
+  reg.size = reg1->size*reg2->size;
+  reg.hashw = reg1->size*reg2->size + 2;
+
+
+  /* allocate memory for the new basis states */
+  
+  reg.node = calloc(reg.size, sizeof(quantum_reg_node));
+  if(!reg.node) 
+    {
+      printf("Not enough memory for %i-sized qubit!\n", reg.size);
+      exit(1);
+    }
+  quantum_memman((reg.size)*sizeof(quantum_reg_node));
+
+
+  /* Allocate the hash table */
+
+  reg.hash = calloc(1 << reg.hashw, sizeof(int));
+  if(!reg.hash)
+    {
+      printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
+      exit(1);
+    }
+  quantum_memman((1 << reg.hashw) * sizeof(int));
+
+  for(i=0; i<reg1->size; i++)
+    for(j=0; j<reg2->size; j++)
+    {
+      /* printf("processing |%lli> x |%lli>\n", reg1->node[i].state, 
+	     reg2->node[j].state);
+         printf("%lli\n", (reg1->node[i].state) << reg2->width); */
+
+      reg.node[i*reg2->size+j].state = 	((reg1->node[i].state) << reg2->width)
+	| reg2->node[j].state;
+      reg.node[i*reg2->size+j].amplitude = 
+	reg1->node[i].amplitude * reg2->node[j].amplitude;
+    }
+
+  return reg;
 }

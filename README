@@ -1,4 +1,4 @@
-libquantum 0.2.1 README file
+libquantum 0.2.2 README file
 ----------------------------
 
 libquantum is a C library for quantum computing. It provides quantum
@@ -18,4 +18,4 @@ Send inquiries, comments, bug reports, suggestions, patches, etc. to:
 libquantum@enyo.de
 
 See also the libquantum website:
-http://www.enyo.de/libquantum
+http://www.enyo.de/libquantum/

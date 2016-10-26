@@ -1,4 +1,4 @@
-libquantum 0.2.1 installation guide
+libquantum 0.2.2 installation guide
 -----------------------------------
 
 Contents:
@@ -27,7 +27,7 @@ libquantum@enyo.de.
 As libquantum was created using autoconf and libtool, this step should
 not be a major problem. Simply extract the tarball to a directory:
 
-	tar xzvf libquantum-0.2.1.tar.gz
+	tar xzvf libquantum-0.2.2.tar.gz
 
 Next, run the configure script:
 
@@ -55,6 +55,29 @@ means 2^10 = 1024 elements):
 
 	./grover 42 10
 
+To see which quantum operations a program or an algorithm actually
+performs, the concept of quantum object code (quobcode) has been
+developed. Two helper tools can be built by typing
+
+	make quobtools
+
+This will create two programs, quobdump and quobprint. quobdump can
+generate the object code directly from a program, which does not need
+to be recompiled. It requires as arguements the file to which the
+object code shall be written and the name of the program for which the
+quobcode shall be created (plus the arguments for this program). For
+example:
+
+	./quobdump output_file ./shor 15
+
+Quobcode files are binary data files. quobprint can be used to view
+these files and takes the quobcode file as the only argument:
+
+	./quobprint output_file
+
+Each line of output contains the number of the operation, the type of
+operation and its arguments.
+
 
 2. Installation of the library
 ------------------------------
@@ -69,6 +92,11 @@ not in the standard search path for libraries. Take a look at the
 output of the last command to get some advice on how to deal with
 this.
 
+To install the quobcode tools on your system type
+
+	make quobtools_install
+
+
 3. Writing your own programs
 ----------------------------
 
@@ -77,4 +105,4 @@ You can use libquantum as any other C library. Just #include
 with the linker flag -lquantum.
 
 For a detailed guide on programming with libquantum take a look at
-http://www.enyo.de/libquantum.
+http://www.enyo.de/libquantum/.

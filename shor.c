@@ -33,13 +33,13 @@ int main(int argc, char **argv) {
   quantum_reg qr;
   int i;
   int width, swidth;
-  int x;
+  int x = 0;
   int N;
   int c,q,a,b, factor;
 
   srandom(time(0));
 
-  if(argc==1)
+  if(argc == 1)
     {
       printf("Usage: shor [number]\n\n");
       return 3;
@@ -58,10 +58,14 @@ int main(int argc, char **argv) {
 
   printf("N = %i, %i qubits required\n", N, width+3*swidth+2);
 
-  do
+  if(argc >= 3)
+    {
+      x = atoi(argv[2]);
+    }
+  while((quantum_gcd(N, x) > 1) || (x < 2))
     {
       x = random() % N;
-    } while((quantum_gcd(N, x) > 1) || (x < 2));
+    } 
 
   printf("Random seed: %i\n", x);
 
@@ -88,8 +92,6 @@ int main(int argc, char **argv) {
       quantum_cnot(i, width-i-1, &qr);
     }
   
-  //  quantum_print_qureg(qr);
-
   c=quantum_measure(qr);
 
   if(c==-1)
@@ -149,7 +151,7 @@ int main(int argc, char **argv) {
     
   quantum_delete_qureg(&qr);
 
-  //  printf("Memory leak: %i bytes\n", (int) quantum_memman(0));
+  /*  printf("Memory leak: %i bytes\n", (int) quantum_memman(0)); */
 
   return 0;
 }

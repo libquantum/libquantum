@@ -125,7 +125,7 @@ quantum_decohere(quantum_reg *reg)
 	  
 	}
       free(nrands);
-      quantum_memman(reg->width * sizeof(float));  
+      quantum_memman(-reg->width * sizeof(float));  
   
     }
 }

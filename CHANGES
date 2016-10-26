@@ -1,3 +1,9 @@
+libquantum 0.2.2:
+	- Added quantum object code interface
+	- Additional configure options for better portability
+	- Added Kronecker product function
+	- Some minor fixes
+
 libquantum 0.2.1:
 	- Completed GNU/Hurd and FreeBSD ports
 	- Added unbounded toffoli gate

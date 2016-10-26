@@ -32,6 +32,7 @@
 #include "qureg.h"
 #include "complex.h"
 #include "config.h"
+#include "objcode.h"
 
 /* Generate a uniformly distributed random number between 0 and 1 */
 
@@ -48,6 +49,9 @@ quantum_measure(quantum_reg reg)
 {
   double r;
   int i;
+
+  if(quantum_objcode_put(MEASURE))
+    return 0;
 
   /* Get a random number between 0 and 1 */
   
@@ -85,6 +89,9 @@ quantum_bmeasure(int pos, quantum_reg *reg)
   double d=0, pa=0, r;
   MAX_UNSIGNED lpat=0, rpat=0, pos2;
   quantum_reg out;
+
+  if(quantum_objcode_put(BMEASURE, pos))
+     return 0;
 
   pos2 = (MAX_UNSIGNED) 1 << pos;
 
@@ -185,6 +192,9 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
   double d=0, pa=0, r;
   MAX_UNSIGNED pos2;
   quantum_reg out;
+
+  if(quantum_objcode_put(BMEASURE_P, pos))
+     return 0;
 
   pos2 = (MAX_UNSIGNED) 1 << pos;
 

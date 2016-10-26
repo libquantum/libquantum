@@ -32,6 +32,7 @@
 #include "qureg.h"
 #include "decoherence.h"
 #include "qec.h"
+#include "objcode.h"
 
 /* Apply a controlled-not gate */
 
@@ -47,6 +48,9 @@ quantum_cnot(int control, int target, quantum_reg *reg)
     quantum_cnot_ft(control, target, reg);
   else
     {
+      if(quantum_objcode_put(CNOT, control, target))
+	return;
+      
       for(i=0; i<reg->size; i++)
 	{
 	  /* Flip the target bit of a basis state if the control bit is set */
@@ -72,6 +76,9 @@ quantum_toffoli(int control1, int control2, int target, quantum_reg *reg)
     quantum_toffoli_ft(control1, control2, target, reg);
   else
     {
+      if(quantum_objcode_put(TOFFOLI, control1, control2, target))
+	return;
+
       for(i=0; i<reg->size; i++)
 	{
 	  /* Flip the target bit of a basis state if both control bits are
@@ -150,6 +157,9 @@ quantum_sigma_x(int target, quantum_reg *reg)
     quantum_sigma_x_ft(target, reg);
   else
     {
+      if(quantum_objcode_put(SIGMA_X, target))
+	return;
+
       for(i=0; i<reg->size; i++)
 	{
 	  /* Flip the target bit of each basis state */
@@ -166,6 +176,9 @@ void
 quantum_sigma_y(int target, quantum_reg *reg)
 {
   int i;
+
+  if(quantum_objcode_put(SIGMA_Y, target))
+    return;
   
   for(i=0; i<reg->size;i++)
     {
@@ -189,6 +202,9 @@ void
 quantum_sigma_z(int target, quantum_reg *reg)
 {
   int i;
+
+  if(quantum_objcode_put(SIGMA_Z, target))
+    return;
 
   for(i=0; i<reg->size; i++)
     {
@@ -226,6 +242,10 @@ quantum_swaptheleads(int width, quantum_reg *reg)
     {
       for(i=0; i<reg->size; i++)
 	{
+
+	  if(quantum_objcode_put(SWAPLEADS, width))
+	    return;
+
 	  /* calculate left bit pattern */
 	  
 	  pat1 = reg->node[i].state % ((MAX_UNSIGNED) 1 << width);
@@ -274,7 +294,6 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
   COMPLEX_FLOAT t, tnot=0;
   float limit;
   char *done;
-  //  quantum_reg_hash *p;
 
   if((m.cols != 2) || (m.rows != 2))
     {
@@ -285,16 +304,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
   /* Build hash table */
 
   for(i=0; i<(1 << reg->hashw); i++)
-    {
-      /*      while(reg->hash[i])
-	{
-	  p = reg->hash[i]->next;
-	  free(reg->hash[i]);
-	  quantum_memman(-sizeof(quantum_reg_hash));
-	  reg->hash[i] = p;
-	  }*/
-      reg->hash[i] = 0;
-    }
+    reg->hash[i] = 0;
       
   for(i=0; i<reg->size; i++)
     quantum_add_hash(reg->node[i].state, i, reg);
@@ -438,6 +448,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 		 reg->size + addsize);
 	  exit(1);
 	}
+      quantum_memman(-decsize * sizeof(quantum_reg_node));
     }
 
   quantum_decohere(reg);
@@ -449,7 +460,10 @@ void
 quantum_hadamard(int target, quantum_reg *reg)
 {
   quantum_matrix m;
-
+  
+  if(quantum_objcode_put(HADAMARD, target))
+    return;
+  
   m = quantum_new_matrix(2, 2);
 
   m.t[0] = sqrt(1.0/2);  m.t[1] = sqrt(1.0/2);
@@ -479,6 +493,9 @@ void
 quantum_r_x(int target, float gamma, quantum_reg *reg)
 {
   quantum_matrix m;
+  
+  if(quantum_objcode_put(ROT_X, target, (double) gamma))
+    return;
 
   m = quantum_new_matrix(2, 2);
 
@@ -498,6 +515,9 @@ quantum_r_y(int target, float gamma, quantum_reg *reg)
 {
   quantum_matrix m;
 
+  if(quantum_objcode_put(ROT_Y, target, (double) gamma))
+    return;
+
   m = quantum_new_matrix(2, 2);
 
   m.t[0] = cos(gamma / 2);  m.t[1] = -sin(gamma / 2);
@@ -516,6 +536,9 @@ quantum_r_z(int target, float gamma, quantum_reg *reg)
 {
   int i;
   COMPLEX_FLOAT z;
+
+  if(quantum_objcode_put(ROT_Z, target, (double) gamma))
+    return;
 
   z = quantum_cexp(gamma/2);
   
@@ -538,6 +561,9 @@ quantum_phase_scale(int target, float gamma, quantum_reg *reg)
   int i;
   COMPLEX_FLOAT z;
 
+  if(quantum_objcode_put(PHASE_SCALE, target, (double) gamma))
+    return;
+
   z = quantum_cexp(gamma);
   
   for(i=0; i<reg->size; i++)
@@ -557,6 +583,9 @@ quantum_phase_kick(int target, float gamma, quantum_reg *reg)
   int i;
   COMPLEX_FLOAT z;
 
+  if(quantum_objcode_put(PHASE_KICK, target, (double) gamma))
+    return;
+
   z = quantum_cexp(gamma);
   
   for(i=0; i<reg->size; i++)
@@ -575,6 +604,9 @@ quantum_cond_phase(int control, int target, quantum_reg *reg)
 {
   int i;
   COMPLEX_FLOAT z;
+
+  if(quantum_objcode_put(COND_PHASE, control, target))
+    return;
 
   z = quantum_cexp(pi / ((MAX_UNSIGNED) 1 << (control - target)));
 
@@ -612,12 +644,14 @@ quantum_cond_phase_inv(int control, int target, quantum_reg *reg)
 }
 
 
-
 void
 quantum_cond_phase_kick(int control, int target, float gamma, quantum_reg *reg)
 {
   int i;
   COMPLEX_FLOAT z;
+
+  if(quantum_objcode_put(COND_PHASE, control, target, (double) gamma))
+    return;  
 
   z = quantum_cexp(gamma);
 
@@ -631,7 +665,6 @@ quantum_cond_phase_kick(int control, int target, float gamma, quantum_reg *reg)
      }
   quantum_decohere(reg);
 }
-
 
 
 /* Increase the gate counter by INC steps or reset it if INC < 0. The

@@ -32,6 +32,7 @@ EPREFIX=${PREFIX}
 
 LIBDIR=${EPREFIX}/lib
 INCLUDEDIR=${PREFIX}/include
+BINDIR=${PREFIX}/bin
 top_builddir=.
 
 # Version information
@@ -47,21 +48,24 @@ LIBTOOL=@LIBTOOL@
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 3:0:0
+LDFLAGS=-rpath $(LIBDIR) -version-info 4:0:1
 
 # Dependencies
 
 all:	libquantum.la
 
+Makefile: Makefile.in configure.in config.h.in types.h.in quantum.h.in
+	./configure
+
 libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo\
 	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo\
-	Makefile
+	objcode.lo Makefile
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o libquantum.la complex.lo measure.lo\
 	matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo qec.lo version.lo -lm
+	qureg.lo decoherence.lo qec.lo version.lo objcode.lo -lm
 
 complex.lo: complex.c complex.h Makefile
-	$(LIBTOOL) $(CC) $(CFLAGS) -c complex.c	
+	$(LIBTOOL) $(CC) $(CFLAGS) -c complex.c
 
 measure.lo: measure.c measure.h matrix.h qureg.h complex.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c measure.c
@@ -100,6 +104,10 @@ qec.lo: qec.c qec.h gates.h qureg.h decoherence.h measure.h config.h Makefile
 version.lo: version.c version.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c version.c
 
+objcode.lo: objcode.c objcode.h matrix.h gates.h qureg.h measure.h config.h\
+	Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -c objcode.c
+
 # Build demos of Shor's and Grover's algorithms
 
 demos: shor grover
@@ -111,17 +119,31 @@ grover: libquantum.la grover.c Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -o grover grover.c -I./ -lquantum -static\
 	-lm
 
+# Quantum object code tools
+
+quobtools: quobprint quobdump
+
+quobprint: libquantum.la quobprint.c objcode.h Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -o quobprint quobprint.c -lquantum
+
+quobdump: libquantum.la quobdump.c objcode.h Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -o quobdump quobdump.c -lquantum
+
 # Bring this savage back home
 
 install: libquantum.la
 	$(LIBTOOL) $(INSTALL) -m 0644 libquantum.la $(LIBDIR)
 	$(INSTALL) -m 0644 quantum.h $(INCLUDEDIR)
 
+quobtools_install: quobtools
+	$(LIBTOOL) $(INSTALL) -m 0755 quobprint $(BINDIR)
+	$(LIBTOOL) $(INSTALL) -m 0755 quobdump $(BINDIR)
+
 # Make everything neat and tidy
 
 clean:
 	-rm -rf .libs
-	-rm shor libquantum.la *.lo *.o
+	-rm shor grover libquantum.la *.lo *.o
 
 distclean:
 	-rm -rf .libs
@@ -129,10 +151,9 @@ distclean:
 	libquantum.la
 
 dist:
-	-rm quantum.h config.h
+	-rm quantum.h config.h types.h
 	mkdir libquantum-$(VERSION)
-	cp *.c *.h quantum.h.in Makefile.in config.h.in configure configure.in\
-	COPYING	install-sh ltmain.sh config.sub config.guess README INSTALL\
-	CHANGES	libquantum-$(VERSION)
+	cp *.c *.h *.in configure COPYING install-sh ltmain.sh config.sub\
+	config.guess README INSTALL CHANGES libquantum-$(VERSION)
 	tar czf libquantum-$(VERSION).tar.gz libquantum-$(VERSION)/
 	rm -rf libquantum-$(VERSION)
