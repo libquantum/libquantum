@@ -29,9 +29,9 @@
 #include "config.h"
 
 extern void quantum_rk4(quantum_reg *reg, double t, double dt, 
-			quantum_reg H(MAX_UNSIGNED, double));
+			quantum_reg H(MAX_UNSIGNED, double), int flags);
 extern double quantum_rk4a(quantum_reg *reg, double t, double *dt, 
 			   double epsilon, 
-			   quantum_reg H(MAX_UNSIGNED, double));
+			   quantum_reg H(MAX_UNSIGNED, double), int flags);
 
 #endif

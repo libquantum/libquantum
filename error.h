@@ -26,14 +26,17 @@
 #define __ERROR_H
 
 enum {
-  QUANTUM_SUCCESS   = 0,
-  QUANTUM_FAILURE   = 1,
-  QUANTUM_ENOMEM    = 2,
-  QUANTUM_EMLARGE   = 3,
-  QUANTUM_EMSIZE    = 4,
-  QUANTUM_EHASHFULL = 5,
-  QUANTUM_EMCMATRIX = 65536, /* internal errors start at 65536 */
-  QUANTUM_EOPCODE   = 65537
+  QUANTUM_SUCCESS      = 0,
+  QUANTUM_FAILURE      = 1,
+  QUANTUM_ENOMEM       = 2,
+  QUANTUM_EMLARGE      = 3,
+  QUANTUM_EMSIZE       = 4,
+  QUANTUM_EHASHFULL    = 5,
+  QUANTUM_ENOLAPACK    = 32768, /* LAPACK errors start at 32768 */
+  QUANTUM_ELAPACKARG   = 32769,
+  QUANTUM_ELAPACKCHEEV = 32770,
+  QUANTUM_EMCMATRIX    = 65536, /* internal errors start at 65536 */
+  QUANTUM_EOPCODE      = 65537
 };
 
 extern void *quantum_error_handler(void *f(int));

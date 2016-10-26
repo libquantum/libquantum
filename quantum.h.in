@@ -1,6 +1,6 @@
 /* quantum.h: Header file for libquantum
 
-   Copyright 2003-2007 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003-2008 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -138,7 +138,7 @@ extern COMPLEX_FLOAT quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2);
 extern quantum_reg quantum_vectoradd(quantum_reg *reg1, quantum_reg *reg2);
 extern void quantum_vectoradd_inplace(quantum_reg *reg1, quantum_reg *reg2);
 extern quantum_reg quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double),
-					double t, quantum_reg *reg);
+					double t, quantum_reg *reg, int flags);
 extern void quantum_scalar_qureg(COMPLEX_FLOAT r, quantum_reg *reg);
 extern void quantum_print_timeop(int width, void f(quantum_reg *));
 
@@ -166,9 +166,13 @@ extern const char *quantum_strerr(int errno);
 extern void quantum_error(int errno);
 
 extern void quantum_rk4(quantum_reg *reg, double t, double dt, 
-			quantum_reg H(MAX_UNSIGNED, double));
+			quantum_reg H(MAX_UNSIGNED, double), int flags);
 extern double quantum_rk4a(quantum_reg *reg, double t, double *dt, 
 			   double epsilon, 
-			   quantum_reg H(MAX_UNSIGNED, double));
+			   quantum_reg H(MAX_UNSIGNED, double), int flags);
+
+extern void quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt, 
+			      quantum_reg *tmp1, quantum_reg *tmp2, 
+			      quantum_matrix H, float **w);
 
 #endif

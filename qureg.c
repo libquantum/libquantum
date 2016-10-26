@@ -333,7 +333,7 @@ quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
   
   reg.width = reg1->width+reg2->width;
   reg.size = reg1->size*reg2->size;
-  reg.hashw = reg.width+2;
+  reg.hashw = reg.width + 2;
 
 
   /* allocate memory for the new basis states */
@@ -605,7 +605,7 @@ quantum_vectoradd_inplace(quantum_reg *reg1, quantum_reg *reg2)
 
 quantum_reg
 quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double), double t,
-		     quantum_reg *reg)
+		     quantum_reg *reg, int flags)
 {
   MAX_UNSIGNED i;
   quantum_reg reg2;
@@ -627,13 +627,30 @@ quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double), double t,
       reg2.node[i].state = i;
       tmp = A(i, t);
       reg2.node[i].amplitude = quantum_dot_product_noconj(&tmp, reg);
-      quantum_delete_qureg(&tmp);
+      if(!(flags & 1))
+	quantum_delete_qureg(&tmp);
     }
   
  
   return reg2;
 
 }
+
+/* Matrix-vector multiplication using a quantum_matrix */
+
+void 
+quantum_mvmult(quantum_reg *y, quantum_matrix A, quantum_reg *x)
+{
+  int i, j;
+
+  for(i=0; i<A.cols; i++)
+    {
+      y->node[i].amplitude = 0;
+      for(j=0; j<A.cols; j++)
+	y->node[i].amplitude += M(A, j, i)*x->node[j].amplitude;
+    }
+} 
+
 
 /* Scalar multiplication of a quantum register. This is a purely
    mathematical operation without any physical meaning, so only use it

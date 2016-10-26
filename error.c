@@ -54,6 +54,12 @@ quantum_strerr(int errno)
       return "wrong matrix size";
     case QUANTUM_EHASHFULL:
       return "hash table full";
+    case QUANTUM_ENOLAPACK:
+      return "LAPACK support not compiled in";
+    case QUANTUM_ELAPACKARG:
+      return "wrong arguments supplied to LAPACK";
+    case QUANTUM_ELAPACKCHEEV:
+      return "LAPACK's CHEEV failed to converge";
     case QUANTUM_EMCMATRIX:
       return "single-column matrix expected";
     case QUANTUM_EOPCODE:

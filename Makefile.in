@@ -1,6 +1,6 @@
 # Makefile: Build libquantum
 # 
-# Copyright 2003-2005 Bjoern Butscher, Hendrik Weimer
+# Copyright 2003-2008 Bjoern Butscher, Hendrik Weimer
 #
 # This file is part of libquantum
 #
@@ -49,7 +49,7 @@ LIBTOOL=@LIBTOOL@
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 6:1:3
+LDFLAGS=-rpath $(LIBDIR) -version-info 7:0:0
 
 # Dependencies
 
@@ -57,11 +57,11 @@ all:	libquantum.la
 
 libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo \
 	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo \
-	objcode.lo density.lo error.lo qtime.lo Makefile
+	objcode.lo density.lo error.lo qtime.lo lapack.lo Makefile
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o libquantum.la complex.lo \
 	measure.lo matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo \
 	classic.lo qureg.lo decoherence.lo qec.lo version.lo objcode.lo \
-	density.lo error.lo qtime.lo -lm
+	density.lo error.lo qtime.lo lapack.lo @LIBS@
 
 complex.lo: complex.c complex.h config.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c complex.c
@@ -119,6 +119,9 @@ error.lo: error.c error.h Makefile
 
 qtime.lo: qtime.c qtime.h qureg.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c qtime.c
+
+lapack.lo: lapack.c lapack.h matrix.h qureg.h config.h error.h Makefile
+	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c lapack.c
 
 # Autoconf stuff
 

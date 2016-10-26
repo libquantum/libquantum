@@ -34,7 +34,7 @@
 
 void
 quantum_rk4(quantum_reg *reg, double t, double dt, 
-	    quantum_reg H(MAX_UNSIGNED, double))
+	    quantum_reg H(MAX_UNSIGNED, double), int flags)
 {
   quantum_reg k, out, tmp;
   double r = 0;
@@ -49,7 +49,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   reg->hashw = 0;
 
   /* k1 */
-  k = quantum_matrix_qureg(H, t, reg);
+  k = quantum_matrix_qureg(H, t, reg, flags);
   quantum_scalar_qureg(-IMAGINARY*dt/2.0, &k);
   tmp = quantum_vectoradd(reg, &k);
   quantum_scalar_qureg(1.0/3.0, &k);
@@ -57,7 +57,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   quantum_delete_qureg(&k);
 
   /* k2 */
-  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp);
+  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags);
   quantum_delete_qureg(&tmp);
   quantum_scalar_qureg(-IMAGINARY*dt/2.0, &k);
   tmp = quantum_vectoradd(reg, &k);
@@ -66,7 +66,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   quantum_delete_qureg(&k);
 
   /* k3 */
-  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp);
+  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags);
   quantum_delete_qureg(&tmp);
   quantum_scalar_qureg(-IMAGINARY*dt, &k);
   tmp = quantum_vectoradd(reg, &k);
@@ -75,7 +75,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   quantum_delete_qureg(&k);
 
   /* k4 */
-  k = quantum_matrix_qureg(H, t+dt, &tmp);
+  k = quantum_matrix_qureg(H, t+dt, &tmp, flags);
   quantum_delete_qureg(&tmp);
   quantum_scalar_qureg(-IMAGINARY*dt/6.0, &k);
   quantum_vectoradd_inplace(&out, &k);
@@ -103,7 +103,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
 
 double
 quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon, 
-	     quantum_reg H(MAX_UNSIGNED, double))
+	     quantum_reg H(MAX_UNSIGNED, double), int flags)
 {
   quantum_reg reg2, old;
   double delta, r, dtused;
@@ -122,9 +122,9 @@ quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon,
 
   do
     {
-      quantum_rk4(reg, t, *dt, H);
-      quantum_rk4(&reg2, t, *dt/2.0, H);
-      quantum_rk4(&reg2, t, *dt/2.0, H);
+      quantum_rk4(reg, t, *dt, H, flags);
+      quantum_rk4(&reg2, t, *dt/2.0, H, flags);
+      quantum_rk4(&reg2, t+*dt/2.0, *dt/2.0, H, flags);
 
       delta = 0;
 

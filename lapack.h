@@ -1,6 +1,6 @@
-/* matrix.h: Declarations for matrix.c
+/* time.c: Declarations for lapack.h
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2006 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -21,31 +21,16 @@
 
 */
 
-#ifndef __MATRIX_H
+#ifndef __LAPACK_H
 
-#define __MATRIX_H
+#define __LAPACK_H
 
 #include "config.h"
+#include "matrix.h"
+#include "qureg.h"
 
-/* A ROWS x COLS matrix with complex elements */
-
-struct quantum_matrix_struct {
-  int rows;
-  int cols;
-  COMPLEX_FLOAT *t;
-};
-
-typedef struct quantum_matrix_struct quantum_matrix;
-
-#define M(m,x,y) m.t[(x)+(y)*m.cols]
-
-extern unsigned long quantum_memman(long change);
-
-extern quantum_matrix quantum_new_matrix(int cols, int rows);
-extern void quantum_delete_matrix(quantum_matrix *m);
-extern void quantum_print_matrix(quantum_matrix m);
-
-extern quantum_matrix quantum_mmult(quantum_matrix A, quantum_matrix B);
-extern void quantum_adjoint(quantum_matrix *m);
+extern void quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt, 
+			      quantum_reg *tmp1, quantum_reg *tmp2, 
+			      quantum_matrix H, float **w);
 
 #endif

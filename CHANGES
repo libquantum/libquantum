@@ -1,4 +1,7 @@
-libquantum 1.0.0:
+libquantum 1.1.0:
+	- Added exact diagonlization based on LAPACK
+	- Added flag in quantum_rk4 to preserve qureg (breaks backward 
+	  compatibility)
 	- Fixed quantum_gate1 to work properly with sorted regs
 	- Fixed several bugs in quantum_rk4a
 

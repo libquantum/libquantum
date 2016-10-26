@@ -79,8 +79,9 @@ extern COMPLEX_FLOAT quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2);
 extern quantum_reg quantum_vectoradd(quantum_reg *reg1, quantum_reg *reg2);
 extern void quantum_vectoradd_inplace(quantum_reg *reg1, quantum_reg *reg2);
 extern quantum_reg quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double),
-					double t, quantum_reg *reg);
+					double t, quantum_reg *reg, int flags);
 extern void quantum_scalar_qureg(COMPLEX_FLOAT r, quantum_reg *reg);
+extern void quantum_mvmult(quantum_reg *y, quantum_matrix A, quantum_reg *x);
 
 extern void quantum_print_timeop(int width, void f(quantum_reg *));
 

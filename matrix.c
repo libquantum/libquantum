@@ -134,4 +134,24 @@ quantum_matrix quantum_mmult(quantum_matrix A, quantum_matrix B)
 
   return C;
 }
-	    
+
+/* Compute the adjoint of a matrix */
+
+void 
+quantum_adjoint(quantum_matrix *m)
+{
+  int i, j;
+  COMPLEX_FLOAT tmp;
+  quantum_matrix A = *m;
+
+  for(i=0; i<m->cols; i++)
+    {
+      for(j=0;j<i;j++)
+	{
+	  tmp = M(A, i, j);
+	  M(A, i, j) = quantum_conj(M(A, j, i));
+	  M(A, j, i) = quantum_conj(tmp);
+	}
+    }
+}
+
