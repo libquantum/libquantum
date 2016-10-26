@@ -1,0 +1,71 @@
+libquantum 0.1.0 installation guide
+-----------------------------------
+
+Contents:
+
+0.	Requirements
+1.  	Configure and make
+2. 	Installation of the library
+3. 	Write your own programs
+
+
+0. Requirements
+---------------
+
+libquantum needs a C compiler with complex number support (C99
+prefered). A recent gcc (>=2.9.5) will do the job. Furthermore, the
+host must support 64-bit integers, even if it is not a 64-bit machine.
+
+If you encounter any difficulties while building, installing or using
+libquantum, we would like to hear from you. Just send a mail to
+libquantum@enyo.de.
+
+
+1. Configure and Make
+---------------------
+
+As libquantum was created using autoconf and libtool, this step should
+not be a major problem. Simply extract the tarball to a directory:
+
+	tar xzvf libquantum-0.1.0.tar.gz
+
+Next, run the configure script:
+
+	./configure
+
+Now you can build the beast:
+
+	make
+
+By now, you can create a sample program which implements Shor's
+factoring algorithm:
+
+	make shor
+
+The number to be factored is given on the command line as the first
+parameter. To factor 15, simply type:
+
+	./shor 15
+
+
+2. Installation of the library
+------------------------------
+
+For this step you will need to have superuser privileges. Just type
+
+	make install
+
+to get libquantum installed into the default directory, which is
+usually /usr/local/bin. Note that on some systems this directories is
+not in the standard search path. Take a look at the output of the last
+command to get some advice on how to deal with this.
+
+3. Writing your own programs
+----------------------------
+
+You can use libquantum as any other C library. Just #include
+<quantum.h> in your source file and link the library into your program
+with the linker flag -lquantum.
+
+For a detailed guide on programming with libquantum take a look at
+http://www.enyo.de/libquantum.

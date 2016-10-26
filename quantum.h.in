@@ -1,0 +1,117 @@
+/* quantum.h: Header file for libquantum
+
+   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+
+   This file is part of libquantum
+
+   libquantum is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published
+   by the Free Software Foundation; either version 2 of the License,
+   or (at your option) any later version.
+
+   libquantum is distributed in the hope that it will be useful, but
+   WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with libquantum; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+   USA
+
+*/
+
+#ifndef __QUANTUM_H
+
+#define __QUANTUM_H
+
+#define COMPLEX_FLOAT @CF_TYPE@
+#define MAX_UNSIGNED @MU_TYPE@
+
+/* A ROWS x COLS matrix with complex elements */
+
+struct quantum_matrix_struct {
+  int rows;
+  int cols;
+  COMPLEX_FLOAT *t;
+};
+
+typedef struct quantum_matrix_struct quantum_matrix;
+
+struct quantum_reg_node_struct
+{
+  COMPLEX_FLOAT amplitude; /* alpha_j */
+  MAX_UNSIGNED state;      /* j */
+};
+
+typedef struct quantum_reg_node_struct quantum_reg_node;
+
+/* One element of the hash table */
+
+struct quantum_reg_hash_struct
+{
+  int i;
+  struct quantum_reg_hash_struct *next;
+};
+
+typedef struct quantum_reg_hash_struct quantum_reg_hash;
+
+/* The quantum register */
+
+struct quantum_reg_struct
+{
+  int width;    /* number of qubits in the qureg */
+  int size;     /* number of non-zero vectors */
+  int hashw;    /* width of the hash array */
+  quantum_reg_node *node;
+  quantum_reg_hash **hash;
+};
+
+typedef struct quantum_reg_struct quantum_reg;
+
+extern quantum_reg quantum_new_qureg(MAX_UNSIGNED initval, int width);
+extern void quantum_delete_qureg(quantum_reg *reg);
+extern void quantum_print_qureg(quantum_reg reg);
+extern void quantum_addscratch(int bits, quantum_reg *reg);
+
+extern void quantum_cnot(int, int, quantum_reg *);
+extern void quantum_toffoli(int, int, int, quantum_reg *);
+extern void quantum_X_gate(int, quantum_reg *);
+extern void quantum_Y_gate(int a, quantum_reg *reg);
+extern void quantum_Z_gate(int a, quantum_reg *reg);
+extern void quantum_gate1(quantum_matrix m, int a, quantum_reg *reg);
+extern void quantum_r_x(int a, float gamma, quantum_reg *reg);
+extern void quantum_r_y(int a, float gamma, quantum_reg *reg);
+extern void quantum_phase_kick(int a, float gamma, quantum_reg *reg);
+extern void quantum_hadamard(int a, quantum_reg *reg);
+extern void quantum_walsh(int a, quantum_reg *reg);
+extern void quantum_cond_phase(int a, int b, quantum_reg *reg);
+extern int quantum_gate_counter(int inc);
+
+extern void quantum_qft(int width, quantum_reg *reg);
+
+extern void quantum_exp_mod_n(int, int, int, int, quantum_reg *);
+
+extern MAX_UNSIGNED quantum_measure(quantum_reg reg);
+extern int quantum_bmeasure(int pos, quantum_reg *reg);
+
+extern quantum_matrix quantum_new_matrix(int ,int );
+extern void quantum_delete_matrix(quantum_matrix *m);
+
+extern int quantum_ipow(int a, int b);
+extern int quantum_gcd(int u, int v);
+extern void quantum_cancel(int *a, int *b);
+extern void quantum_frac_approx(int *a, int *b, int width);
+extern int quantum_getwidth(int n);
+
+extern float quantum_prob(COMPLEX_FLOAT a);
+
+extern void quantum_set_decoherence(float lambda);
+extern void quantum_decohere(quantum_reg *reg);
+
+extern void quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg);
+
+extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
+extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
+
+#endif

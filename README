@@ -1,0 +1,21 @@
+libquantum 0.1.0 README file
+----------------------------
+
+libquantum is a C library for quantum computing. It provides quantum
+registers, unitary operations and measurement functions. The main goal
+is a physically precise simulation of a quantum computer with high
+performance.
+
+An implementation of Shor's factoring algorithm is included with this
+release.
+
+See the file INSTALL for help on the installation.
+
+guardian is distributed under the terms of the GNU General Public
+License (GPL), which is located in the file COPYING.
+
+Send inquiries, comments, bug reports, suggestions, patches, etc. to:
+libquantum@enyo.de
+
+See also the guardian website:
+http://www.enyo.de/libquantum
