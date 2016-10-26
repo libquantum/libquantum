@@ -20,7 +20,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 # MA 02110-1301, USA
 
-AC_INIT([libquantum], [0.9.1], [libquantum@libquantum.de])
+AC_INIT([libquantum], [1.0.0], [libquantum@libquantum.de])
 AC_CONFIG_SRCDIR([classic.c])
 AC_CONFIG_HEADER([config.h])
 

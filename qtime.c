@@ -98,13 +98,14 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
 }
 
 /* Adaptive Runge-Kutta. Stores the new stepsize in dt and returns the
-   stepsize actually used. */
+   stepsize actually used. For further details, see Press et al.,
+   Numerical Recipes in C (Second Edition, CUP, 1992), Sec. 16.3 */
 
 double
 quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon, 
 	     quantum_reg H(MAX_UNSIGNED, double))
 {
-  quantum_reg reg2, old, tmp;
+  quantum_reg reg2, old;
   double delta, r, dtused;
   int i;
   void *hash;
@@ -129,34 +130,42 @@ quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon,
 
       for(i=0;i<reg->size;i++)
 	{
-	  if(quantum_real(reg->node[i].amplitude - reg2.node[i].amplitude)
-	     > quantum_imag(reg->node[i].amplitude - reg2.node[i].amplitude))
-	    r = 2*quantum_real(reg->node[i].amplitude - reg2.node[i].amplitude)
-	      / quantum_real(reg->node[i].amplitude + reg2.node[i].amplitude);
-	  else
-	    r = 2*quantum_imag(reg->node[i].amplitude - reg2.node[i].amplitude)
-	      / quantum_imag(reg->node[i].amplitude + reg2.node[i].amplitude);
+	  r = 2*sqrt(quantum_prob(reg->node[i].amplitude 
+				  - reg2.node[i].amplitude)/
+		     quantum_prob(reg->node[i].amplitude 
+				  + reg2.node[i].amplitude));
 	  
 	  if(r > delta)
 	    delta = r;
+		  
 	}
       
       dtused = *dt;
-      *dt *= pow(epsilon/delta, 0.2);
+
+      if(delta < epsilon)
+	*dt *= 0.9*pow(epsilon/delta, 0.2);
+      else
+	*dt *= 0.9*pow(epsilon/delta, 0.25);
+
+      if(*dt > 4*dtused)
+	*dt = 4*dtused;
+      
+      else if(*dt < 0.25*dtused)
+	*dt = 0.25*dtused;
 
       if(delta > epsilon)
 	{
-	  tmp = *reg;
-	  *reg = old;
-	  old = tmp;
-	  memcpy(reg2.node, reg->node, reg->size*sizeof(quantum_reg_node));
-	  memcpy(old.node, reg->node, reg->size*sizeof(quantum_reg_node));
+	  memcpy(reg->node, old.node, reg->size*sizeof(quantum_reg_node));
+	  memcpy(reg2.node, old.node, reg->size*sizeof(quantum_reg_node));
 	}
       
     } while(delta > epsilon);
 
   reg->hash = hash;
   reg->hashw = hashw;
+
+  quantum_delete_qureg(&old);
+  quantum_delete_qureg(&reg2);
   
   return dtused;
 }

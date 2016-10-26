@@ -158,6 +158,11 @@ static inline void
 quantum_reconstruct_hash(quantum_reg *reg)
 {
   int i;
+
+  /* Check whether register is sorted */
+
+  if(!reg->hashw)
+    return;
   
   for(i=0; i<(1 << reg->hashw); i++)
     reg->hash[i] = 0;

@@ -49,7 +49,7 @@ LIBTOOL=@LIBTOOL@
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 6:0:3
+LDFLAGS=-rpath $(LIBDIR) -version-info 6:1:3
 
 # Dependencies
 

@@ -289,7 +289,7 @@ void
 quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 {
   int i, j, k, iset;
-  int addsize=0, decsize=0, sorted=1;
+  int addsize=0, decsize=0;
   COMPLEX_FLOAT t, tnot=0;
   float limit;
   char *done;
@@ -297,38 +297,36 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
   if((m.cols != 2) || (m.rows != 2))
     quantum_error(QUANTUM_EMSIZE);
 
-  quantum_reconstruct_hash(reg);
-
-  /* calculate the number of basis states to be added */
-
-  for(i=0; i<reg->size; i++)
+  if(reg->hashw)
     {
-      /* determine whether quantum register is sorted */
+      quantum_reconstruct_hash(reg);
 
-      if(sorted && (reg->node[i].state != i))
-	sorted = 0;
+      /* calculate the number of basis states to be added */
 
-      /* determine whether XORed basis state already exists */
+      for(i=0; i<reg->size; i++)
+	{
+	  /* determine whether XORed basis state already exists */
 
-      if(quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target),
-			   *reg) == -1)
-	addsize++;
-    }
-
-  /* allocate memory for the new basis states */
+	  if(quantum_get_state(reg->node[i].state 
+			       ^ ((MAX_UNSIGNED) 1 << target), *reg) == -1)
+	    addsize++;
+	}
+      
+      /* allocate memory for the new basis states */
   
-  reg->node = realloc(reg->node, 
-		      (reg->size + addsize) * sizeof(quantum_reg_node));
+      reg->node = realloc(reg->node, 
+			  (reg->size + addsize) * sizeof(quantum_reg_node));
+      
+      if(!reg->node) 
+	quantum_error(QUANTUM_ENOMEM);
 
-  if(!reg->node) 
-    quantum_error(QUANTUM_ENOMEM);
+      quantum_memman(addsize*sizeof(quantum_reg_node));
 
-  quantum_memman(addsize*sizeof(quantum_reg_node));
-
-  for(i=0; i<addsize; i++)
-    {
-      reg->node[i+reg->size].state = 0;
-      reg->node[i+reg->size].amplitude = 0;
+      for(i=0; i<addsize; i++)
+	{
+	  reg->node[i+reg->size].state = 0;
+	  reg->node[i+reg->size].amplitude = 0;
+	}
     }
 
   done = calloc(reg->size + addsize, sizeof(char));
@@ -409,7 +407,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 
   /* remove basis states with extremely small amplitude */
 
-  if(!sorted)
+  if(reg->hashw)
     {
       for(i=0, j=0; i<reg->size; i++)
 	{

@@ -333,7 +333,7 @@ quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
   
   reg.width = reg1->width+reg2->width;
   reg.size = reg1->size*reg2->size;
-  reg.hashw = reg1->size*reg2->size + 2;
+  reg.hashw = reg.width+2;
 
 
   /* allocate memory for the new basis states */

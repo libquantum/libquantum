@@ -1,3 +1,7 @@
+libquantum 1.0.0:
+	- Fixed quantum_gate1 to work properly with sorted regs
+	- Fixed several bugs in quantum_rk4a
+
 libquantum 0.9.1:
 	- Added fourth-order Runge-Kutta time evolution
 	- Fixed error in quantum_measure() that caused some register values 
