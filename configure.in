@@ -1,0 +1,79 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT([libquantum], [0.2.0], [libquantum@enyo.de])
+AC_CONFIG_SRCDIR([classic.c])
+AC_CONFIG_HEADER([config.h])
+
+# The language of our choice
+AC_LANG([C])
+
+# Checks for programs.
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LIBTOOL
+
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-lm':
+AC_CHECK_LIB([m], [sqrt])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([fcntl.h stdlib.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_INLINE
+
+# Check for 64-bit integer
+MU_TYPE="none"
+AC_CHECK_TYPE([uint_64t], [AC_DEFINE([MAX_UNSIGNED], [uint_64t]) 
+	MU_TYPE="uint_64t"])
+if test "$MU_TYPE" = "none"
+then
+	AC_CHECK_TYPE([u_int_64t], [AC_DEFINE([MAX_UNSIGNED], [u_int_64t])
+		MU_TYPE="u_int_64t"])
+fi
+if test "$MU_TYPE" = "none"
+then
+	AC_CHECK_TYPE([unsigned long long], [AC_DEFINE(MAX_UNSIGNED, 
+		[unsigned long long], [Integer type for quantum registers])
+		MU_TYPE="unsigned long long"])
+fi
+if test "$MU_TYPE" = "none"
+then
+	AC_MSG_ERROR([No 64-bit integer type!])
+fi
+
+# Check for complex number type
+CF_TYPE="none"
+AC_CHECK_TYPE([float _Complex], [AC_DEFINE([COMPLEX_FLOAT], [float _Complex])
+	CF_TYPE="float _Complex"])
+if test "$CF_TYPE" = "none"
+then
+	AC_CHECK_TYPE([__complex__ float], [AC_DEFINE([COMPLEX_FLOAT], 
+		[__complex__ float], [Complex data type]) 
+			CF_TYPE="__complex__ float"])
+fi
+if test "$CF_TYPE" = "none"
+then
+	AC_MSG_ERROR([No complex number type!])
+fi
+
+# Check for the imaginary unit
+AC_MSG_CHECKING([for the imaginary unit])
+I="none"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([COMPLEX_FLOAT z;], [z=I;])], 
+	[AC_DEFINE([IMAGINARY], [I], [Imaginary unit]) I="I"])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([COMPLEX_FLOAT z;], [z=_Complex_I;])], 
+	[AC_DEFINE([IMAGINARY], [_Complex_I]) I="_Complex_I"])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([COMPLEX_FLOAT z;], [z=1i;])], 
+	[AC_DEFINE([IMAGINARY], [1i]) I="1i"])
+if test $I = "none"
+then
+	AC_MSG_ERROR([No imaginary unit!])
+fi
+AC_MSG_RESULT($I)
+
+AC_SUBST(MU_TYPE)
+AC_SUBST(CF_TYPE)
+
+AC_CONFIG_FILES([Makefile quantum.h])
+AC_OUTPUT

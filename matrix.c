@@ -39,7 +39,7 @@ unsigned long quantum_memman(long change)
   if(mem > max)
     max = mem;
 
-  return max;
+  return mem;
 }
 
 /* Create a new COLS x ROWS matrix */

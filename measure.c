@@ -169,7 +169,7 @@ quantum_bmeasure(int pos, quantum_reg *reg)
 	}
     }
 
-  quantum_delete_qureg(reg);
+  quantum_delete_qureg_hashpreserve(reg);
   *reg = out;
   return result;
 }

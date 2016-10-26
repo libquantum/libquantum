@@ -1,4 +1,4 @@
-libquantum 0.1.1 installation guide
+libquantum 0.2.0 installation guide
 -----------------------------------
 
 Contents:
@@ -37,15 +37,23 @@ Now you can build the beast:
 
 	make
 
-By now, you can create a sample program which implements Shor's
-factoring algorithm:
+By now, you can create two demo programs which show Shor's factoring
+algorithm and Grover's search algorithm:
 
-	make shor
+	make demos
 
-The number to be factored is given on the command line as the first
-parameter. To factor 15, simply type:
+For the Shor algorithm demo, the number to be factored is given on the
+command line as the first parameter. To factor 15, simply type:
 
 	./shor 15
+
+The demo for Grover's algorithm requires the number of the marked
+element (i.e. the desired result of the search) as the first argument
+on the command line. The number of qubits may be given as a second
+arguments. To mark element No. 42 in a database of 10 qubits (which
+means 2^10 = 1024 elements):
+
+	./grover 42 10
 
 
 2. Installation of the library
@@ -57,8 +65,9 @@ For this step you will need to have superuser privileges. Just type
 
 to get libquantum installed into the default directory, which is
 usually /usr/local/bin. Note that on some systems this directories is
-not in the standard search path. Take a look at the output of the last
-command to get some advice on how to deal with this.
+not in the standard search path for libraries. Take a look at the
+output of the last command to get some advice on how to deal with
+this.
 
 3. Writing your own programs
 ----------------------------

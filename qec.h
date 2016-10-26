@@ -1,4 +1,4 @@
-/* decoherence.h: Declarations for decoherence.c
+/* gates.h: Declarations for qec.c
 
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
@@ -21,14 +21,21 @@
 
 */
 
-#ifndef __DECOHERENCE_H
+#ifndef __QEC_H
 
-#define __DECOHERENCE_H
+#define __QEC_H
 
-extern float quantum_get_decoherence();
+#include "qureg.h"
 
-extern void quantum_set_decoherence(float lambda);
+extern void quantum_qec_set_status(int stype, int swidth);
+extern void quantum_qec_get_status(int *ptype, int *pwidth);
 
-extern void quantum_decohere(quantum_reg *reg);
+extern void quantum_qec_encode(int type, int width, quantum_reg *reg);
+extern void quantum_qec_decode(int type, int width, quantum_reg *reg);
+
+extern void quantum_sigma_x_ft(int target, quantum_reg *reg);
+extern void quantum_cnot_ft(int control, int target, quantum_reg *reg);
+extern void quantum_toffoli_ft(int control1, int control2, int target, 
+			       quantum_reg *reg);
 
 #endif

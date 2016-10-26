@@ -156,17 +156,50 @@ quantum_qureg2matrix(quantum_reg reg)
   return m;
 }
 
-/* Delete a quantum register. Note that the hash table is still
-   alive. */
+/* Destroys the entire hash table of a quantum register */
+
+void
+quantum_destroy_hash(quantum_reg *reg)
+{
+  int i;
+  quantum_reg_hash *p;
+
+  for(i=0; i<(1 << reg->hashw); i++)
+    {
+      while(reg->hash[i])
+	{
+	  p = reg->hash[i]->next;
+	  free(reg->hash[i]);
+	  quantum_memman(-sizeof(quantum_reg_hash));
+	  reg->hash[i] = p;
+	}
+    }
+
+  free(reg->hash);
+  quantum_memman(-(1 << reg->hashw) * sizeof(quantum_reg_hash *));
+}
+
+/* Delete a quantum register */
 
 void
 quantum_delete_qureg(quantum_reg *reg)
+{
+  quantum_destroy_hash(reg);
+  free(reg->node);
+  quantum_memman(-reg->size * sizeof(quantum_reg_node));
+  reg->node = 0;
+}
+
+/* Delete a quantum register but leave the hash table alive */
+
+void
+quantum_delete_qureg_hashpreserve(quantum_reg *reg)
 {
   free(reg->node);
   quantum_memman(-reg->size * sizeof(quantum_reg_node));
   reg->node = 0;
 }
-    
+
 /* Print the contents of a quantum register to stdout */
 
 void

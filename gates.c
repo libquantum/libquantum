@@ -1,4 +1,4 @@
-/* gates.c: Basic gates for quantum register manipulation
+ /* gates.c: Basic gates for quantum register manipulation
 
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
@@ -30,6 +30,7 @@
 #include "complex.h"
 #include "qureg.h"
 #include "decoherence.h"
+#include "qec.h"
 
 /* Apply a controlled-not gate */
 
@@ -37,15 +38,23 @@ void
 quantum_cnot(int control, int target, quantum_reg *reg)
 {
   int i;
-  
-  for(i=0; i<reg->size; i++)
+  int qec;
+
+  quantum_qec_get_status(&qec, NULL);
+
+  if(qec)
+    quantum_cnot_ft(control, target, reg);
+  else
     {
-      /* Flip the target bit of a base state if the control bit is set */
+      for(i=0; i<reg->size; i++)
+	{
+	  /* Flip the target bit of a base state if the control bit is set */
       
-      if((reg->node[i].state & ((MAX_UNSIGNED) 1 << control)))
-	reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+	  if((reg->node[i].state & ((MAX_UNSIGNED) 1 << control)))
+	    reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+	}
+      quantum_decohere(reg);
     }
-  quantum_decohere(reg);
 }
 
 /* Apply a toffoli (or controlled-controlled-not) gate */
@@ -54,21 +63,29 @@ void
 quantum_toffoli(int control1, int control2, int target, quantum_reg *reg)
 {
   int i;
+  int qec;
 
-  for(i=0; i<reg->size; i++)
+  quantum_qec_get_status(&qec, NULL);
+
+  if(qec)
+    quantum_toffoli_ft(control1, control2, target, reg);
+  else
     {
-      /* Flip the target bit of a base state if both control bits are
-         set */
-
-      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control1))
+      for(i=0; i<reg->size; i++)
 	{
-	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control2))
+	  /* Flip the target bit of a base state if both control bits are
+	     set */
+
+	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control1))
 	    {
-	      reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+	      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control2))
+		{
+		  reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+		}
 	    }
-	} 
+	}
+      quantum_decohere(reg);
     }
-  quantum_decohere(reg);
 }
 
 /* Apply a sigma_x (or not) gate */
@@ -77,20 +94,28 @@ void
 quantum_sigma_x(int target, quantum_reg *reg)
 {
   int i;
-  
-  for(i=0; i<reg->size; i++)
-    {
-      /* Flip the target bit of each base state */
+  int qec;
 
-      reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
-    } 
-  quantum_decohere(reg);
+  quantum_qec_get_status(&qec, NULL);
+
+  if(qec)
+    quantum_sigma_x_ft(target, reg);
+  else
+    {
+      for(i=0; i<reg->size; i++)
+	{
+	  /* Flip the target bit of each base state */
+
+	  reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+	} 
+      quantum_decohere(reg);
+    }
 }
 
 /* Apply a sigma_y gate */
 
 void
-quantum_sigma_y(int target, int width, quantum_reg *reg)
+quantum_sigma_y(int target, quantum_reg *reg)
 {
   int i;
   
@@ -113,7 +138,7 @@ quantum_sigma_y(int target, int width, quantum_reg *reg)
 /* Apply a sigma_y gate */
 
 void
-quantum_sigma_z(int target, int width, quantum_reg *reg)
+quantum_sigma_z(int target, quantum_reg *reg)
 {
   int i;
 
@@ -128,34 +153,49 @@ quantum_sigma_z(int target, int width, quantum_reg *reg)
 }
 
 /* Swap the first WIDTH bits of the quantum register. This is done
-   classically by renaming the bits. */
+   classically by renaming the bits, unless QEC is enabled. */
 
 void
 quantum_swaptheleads(int width, quantum_reg *reg)
 {
   int i, j;
   int pat1, pat2;
+  int qec;
   MAX_UNSIGNED l;
 
-  for(i=0; i<reg->size; i++)
+  quantum_qec_get_status(&qec, NULL);
+
+  if(qec)
     {
-      /* calculate left bit pattern */
-      
-      pat1 = reg->node[i].state % ((MAX_UNSIGNED) 1 << width);
+      for(i=0; i<width; i++)
+	{
+	  quantum_cnot(i, width+i, reg);
+	  quantum_cnot(width+i, i, reg);
+	  quantum_cnot(i, width+i, reg);
+	}
+    }
+  else
+    {
+      for(i=0; i<reg->size; i++)
+	{
+	  /* calculate left bit pattern */
+	  
+	  pat1 = reg->node[i].state % ((MAX_UNSIGNED) 1 << width);
+	  
+	  /*calculate right but pattern */
+	  
+	  pat2 = 0;
 
-      /*calculate right but pattern */
-
-      pat2 = 0;
-
-      for(j=0; j<width; j++)
-	pat2 += reg->node[i].state & ((MAX_UNSIGNED) 1 << (width + j));
-
-      /* construct the new base state */
-      
-      l = reg->node[i].state - (pat1 + pat2);
-      l += (pat1 << width);
-      l += (pat2 >> width);
-      reg->node[i].state = l;
+	  for(j=0; j<width; j++)
+	    pat2 += reg->node[i].state & ((MAX_UNSIGNED) 1 << (width + j));
+	  
+	  /* construct the new basis state */
+	  
+	  l = reg->node[i].state - (pat1 + pat2);
+	  l += (pat1 << width);
+	  l += (pat2 >> width);
+	  reg->node[i].state = l;
+	}
     }
 }
 
@@ -352,7 +392,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 	    }
 	}
 
-      quantum_delete_qureg(reg);
+      quantum_delete_qureg_hashpreserve(reg);
       *reg = out;
     }
 
@@ -449,6 +489,22 @@ quantum_r_z(int target, float gamma, quantum_reg *reg)
   quantum_decohere(reg);
 }
 
+/* Scale the phase of qubit */
+
+void
+quantum_phase_scale(int target, float gamma, quantum_reg *reg)
+{
+  int i;
+  
+  for(i=0; i<reg->size; i++)
+    {
+      reg->node[i].amplitude *= quantum_cexp(gamma);
+    }
+
+  quantum_decohere(reg);
+}
+
+
 /* Apply a phase kick by the angle GAMMA */
 
 void
@@ -485,6 +541,45 @@ quantum_cond_phase(int control, int target, quantum_reg *reg)
   quantum_decohere(reg);
 }
 
+
+void
+quantum_cond_phase_inv(int control, int target, quantum_reg *reg)
+{
+  int i;
+
+  for(i=0; i<reg->size; i++)
+    {
+      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control))
+	{
+	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	    reg->node[i].amplitude 
+	      *= quantum_cexp(-pi / ((MAX_UNSIGNED) 1 << (control - target)));
+	}
+    }
+
+  quantum_decohere(reg);
+}
+
+
+
+void
+quantum_cond_phase_kick(int control, int target, float gamma, quantum_reg *reg)
+{
+  int i;
+
+  for(i=0; i<reg->size; i++)
+    {
+      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control))
+	{
+	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	    reg->node[i].amplitude *= quantum_cexp(gamma);
+	}
+     }
+  quantum_decohere(reg);
+}
+
+
+
 /* Increase the gate counter by INC steps or reset it if INC < 0. The
    current value of the counter is returned. */
 
@@ -497,6 +592,6 @@ quantum_gate_counter(int inc)
     counter += inc;
   else if(inc < 0)
     counter = 0;
-  
+
   return counter;
 }

@@ -66,7 +66,9 @@ typedef struct quantum_reg_struct quantum_reg;
 extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
 extern quantum_reg quantum_new_qureg(MAX_UNSIGNED initval, int width);
 extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
+extern void quantum_destroy_hash(quantum_reg *reg);
 extern void quantum_delete_qureg(quantum_reg *reg);
+extern void quantum_delete_qureg_hashpreserve(quantum_reg *reg);
 
 extern void quantum_print_qureg(quantum_reg reg);
 extern void quantum_print_expn(quantum_reg reg);

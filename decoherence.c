@@ -40,6 +40,12 @@ int status = 0;
 
 float lambda = 0;
 
+float
+quantum_get_decoherence()
+{
+  return lambda;
+}
+
 /* Initialize the decoherence simulation and set the decoherence
    parameter. */
 
@@ -63,7 +69,8 @@ void
 quantum_decohere(quantum_reg *reg)
 {
   float u, v, s, x;
-  COMPLEX_FLOAT c0, c1;
+  float *nrands;
+  float angle;
   int i, j;
 
   /* Increase the gate counter */
@@ -72,9 +79,19 @@ quantum_decohere(quantum_reg *reg)
 
   if(status)
     {
-      for(j=0; j<reg->width; j++)
+      
+      nrands = calloc(reg->width, sizeof(float));
+      if(!nrands)
 	{
-	  /* Generate a normal distributed random number */
+	  printf("Not enough memory for %i-sized array of float!\n", 
+		 reg->width);
+	  exit(1);
+	}
+      quantum_memman(reg->width * sizeof(float));
+
+      for(i=0; i<reg->width; i++)
+	{
+	  /* Generate normal distributed random numbers */
 	  
      	  do {
 	    u = 2 * quantum_frand() - 1;
@@ -85,20 +102,30 @@ quantum_decohere(quantum_reg *reg)
 	  x = u * sqrt(-2 * log(s) / s);
 
 	  x *= sqrt(2 * lambda);
-	  
-	  /* Apply the phase shift gate for decoherence simulation */
 
-	  c0 = quantum_cexp(-x / 2);
-	  c1 = quantum_cexp(x / 2);
+	  nrands[i] = x/2;
+	}
 
-	  for(i=0; i<reg->size; i++)
+  
+      /* Apply the phase shifts for decoherence simulation */
+
+      for(i=0; i<reg->size; i++)
+	{
+	  angle = 0;
+
+	  for(j=0; j<reg->width; j++)
 	    {
 	      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << j))
-		reg->node[i].amplitude *= c1;
-
+		angle += nrands[j];
 	      else
-		reg->node[i].amplitude *= c0;
+		angle -= nrands[j];
 	    }
+
+	  reg->node[i].amplitude *= quantum_cexp(angle);
+	  
 	}
+      free(nrands);
+      quantum_memman(reg->width * sizeof(float));  
+  
     }
 }

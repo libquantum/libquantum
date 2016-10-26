@@ -36,29 +36,29 @@ top_builddir=.
 # Release information
 
 MAJOR=0
-MINOR=1
-RELEASE=1
+MINOR=2
+RELEASE=0
 
 # Tools needed to build libquantum
 
-CC=@CC@
+CC=@CC@ -O2 -g -pg
 INSTALL=@INSTALL@
 LIBTOOL=@LIBTOOL@
 
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 1:1:1
+LDFLAGS=-rpath $(LIBDIR) -version-info 2:0:2
 
 # Dependencies
 
 all:	libquantum.la
 
 libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo Makefile
+	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo Makefile
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o libquantum.la complex.lo measure.lo\
 	matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo -lm
+	qureg.lo decoherence.lo qec.lo -lm
 
 complex.lo: complex.c complex.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c complex.c	
@@ -90,9 +90,12 @@ classic.lo: classic.c classic.h Makefile
 qureg.lo: qureg.c qureg.h matrix.h config.h complex.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c qureg.c
 
-decoherence.lo: decoherence.c decoherence.h measure.h gates.h qureg.h config.h\
-	Makefile
+decoherence.lo: decoherence.c decoherence.h measure.h gates.h qureg.h\
+	complex.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c decoherence.c
+
+qec.lo: qec.c qec.h gates.h qureg.h config.h Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -c qec.c
 
 # Bring this savage back home
 
@@ -100,10 +103,16 @@ install: libquantum.la
 	$(LIBTOOL) $(INSTALL) -m 0644 libquantum.la $(LIBDIR)
 	$(INSTALL) -m 0644 quantum.h $(INCLUDEDIR)
 
-# Build a demo showing Shor's factoring algorithm
+# Build demos of Shor's and Grover's algorithms
+
+demos: shor grover
 
 shor: libquantum.la shor.c Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum -static -lm
+
+grover: libquantum.la grover.c Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -o grover grover.c -I./ -lquantum -static\
+	-lm
 
 # Make everything neat and tidy
 
@@ -119,9 +128,9 @@ distclean:
 dist:
 	-rm quantum.h config.h
 	mkdir libquantum-$(MAJOR).$(MINOR).$(RELEASE)
-	cp *.c *.h quantum.h.in Makefile.in config.h.in configure COPYING\
-	install-sh ltmain.sh config.sub config.guess README INSTALL CHANGES\
-	libquantum-$(MAJOR).$(MINOR).$(RELEASE)
+	cp *.c *.h quantum.h.in Makefile.in config.h.in configure configure.in\
+	COPYING	install-sh ltmain.sh config.sub config.guess README INSTALL\
+	CHANGES	libquantum-$(MAJOR).$(MINOR).$(RELEASE)
 	tar czf libquantum-$(MAJOR).$(MINOR).$(RELEASE).tar.gz\
 	libquantum-$(MAJOR).$(MINOR).$(RELEASE)/
 	rm -rf libquantum-$(MAJOR).$(MINOR).$(RELEASE)

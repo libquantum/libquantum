@@ -48,8 +48,14 @@ extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
 extern void quantum_hadamard(int target, quantum_reg *reg);
 extern void quantum_walsh(int target, quantum_reg *reg);
 
+extern void quantum_phase_scale(int target, float gamma, quantum_reg *reg);
 extern void quantum_phase_kick(int target, float gamma, quantum_reg *reg);
+
 extern void quantum_cond_phase(int control, int target, quantum_reg *reg);
+extern void quantum_cond_phase_inv(int control, int target, quantum_reg *reg);
+
+extern void quantum_cond_phase_kick(int control, int target, float gamma, 
+				    quantum_reg *reg);
 
 extern int quantum_gate_counter(int inc);
 
