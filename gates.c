@@ -1,4 +1,4 @@
- /* gates.c: Basic gates for quantum register manipulation
+/* gates.c: Basic gates for quantum register manipulation
 
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdarg.h>
 
 #include "matrix.h"
 #include "defs.h"
@@ -48,7 +49,7 @@ quantum_cnot(int control, int target, quantum_reg *reg)
     {
       for(i=0; i<reg->size; i++)
 	{
-	  /* Flip the target bit of a base state if the control bit is set */
+	  /* Flip the target bit of a basis state if the control bit is set */
       
 	  if((reg->node[i].state & ((MAX_UNSIGNED) 1 << control)))
 	    reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
@@ -73,7 +74,7 @@ quantum_toffoli(int control1, int control2, int target, quantum_reg *reg)
     {
       for(i=0; i<reg->size; i++)
 	{
-	  /* Flip the target bit of a base state if both control bits are
+	  /* Flip the target bit of a basis state if both control bits are
 	     set */
 
 	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control1))
@@ -87,6 +88,53 @@ quantum_toffoli(int control1, int control2, int target, quantum_reg *reg)
       quantum_decohere(reg);
     }
 }
+
+/* Apply an unbounded toffoli gate. This gate is not considered
+elementary and is not available on all physical realizations of a
+quantum computer. Be sure to pass the function the correct number of
+controlling qubits. The target is given in the last argument. */
+
+void
+quantum_unbounded_toffoli(int controlling, quantum_reg *reg, ...)
+{
+  va_list bits;
+  int target;
+  int *controls;
+  int i, j;
+
+  controls = malloc(controlling * sizeof(int));
+  if(!controls)
+    {
+      printf("Error allocating %i-element int array!\n", controlling);
+      exit(1);
+    }
+  quantum_memman(controlling * sizeof(int));
+
+  va_start(bits, reg);
+  
+  for(i=0; i<controlling; i++)
+    controls[i] = va_arg(bits, int);
+
+  target = va_arg(bits, int);
+
+  va_end(bits);
+
+  for(i=0; i<reg->size; i++)
+    {
+      for(j=0; (j < controlling) && 
+	    (reg->node[i].state & (MAX_UNSIGNED) 1 << controls[j]); j++);
+      
+      if(j == controlling) /* all control bits are set */
+	reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
+    }
+
+  free(controls);
+  quantum_memman(-controlling * sizeof(int));
+
+  quantum_decohere(reg);
+
+}
+  
 
 /* Apply a sigma_x (or not) gate */
 
@@ -104,7 +152,7 @@ quantum_sigma_x(int target, quantum_reg *reg)
     {
       for(i=0; i<reg->size; i++)
 	{
-	  /* Flip the target bit of each base state */
+	  /* Flip the target bit of each basis state */
 
 	  reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
 	} 
@@ -121,7 +169,7 @@ quantum_sigma_y(int target, quantum_reg *reg)
   
   for(i=0; i<reg->size;i++)
     {
-      /* Flip the target bit of each base state and multiply with 
+      /* Flip the target bit of each basis state and multiply with 
 	 +/- i */
 
       reg->node[i].state ^= ((MAX_UNSIGNED) 1 << target);
@@ -221,12 +269,12 @@ quantum_swaptheleads_omuln_controlled(int control, int width, quantum_reg *reg)
 void 
 quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 {
-  int i, j, k;
+  int i, j, k, iset;
   int addsize=0, decsize=0;
   COMPLEX_FLOAT t, tnot=0;
+  float limit;
   char *done;
-  quantum_reg out;
-  quantum_reg_hash *p;
+  //  quantum_reg_hash *p;
 
   if((m.cols != 2) || (m.rows != 2))
     {
@@ -238,19 +286,20 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 
   for(i=0; i<(1 << reg->hashw); i++)
     {
-      while(reg->hash[i])
+      /*      while(reg->hash[i])
 	{
 	  p = reg->hash[i]->next;
 	  free(reg->hash[i]);
 	  quantum_memman(-sizeof(quantum_reg_hash));
 	  reg->hash[i] = p;
-	}
+	  }*/
+      reg->hash[i] = 0;
     }
       
   for(i=0; i<reg->size; i++)
     quantum_add_hash(reg->node[i].state, i, reg);
 
-  /* calculate the number of base states to be added */
+  /* calculate the number of basis states to be added */
 
   for(i=0; i<reg->size; i++)
     {
@@ -267,7 +316,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 	}
     }
 
-  /* allocate memory for the new base states */
+  /* allocate memory for the new basis states */
   
   reg->node = realloc(reg->node, 
 		      (reg->size + addsize) * sizeof(quantum_reg_node));
@@ -295,12 +344,18 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 
   k = reg->size;
 
+  limit = (1.0 / ((MAX_UNSIGNED) 1 << reg->width)) / 1000000;
+
   /* perform the actual matrix multiplication */
 
   for(i=0; i<reg->size; i++)
     {
       if(!done[i])
 	{
+	  /* determine if the target of the basis state is set */
+	  
+	  iset = reg->node[i].state & ((MAX_UNSIGNED) 1 << target);
+
 	  tnot = 0;
 	  j = quantum_get_state(reg->node[i].state 
 				^ ((MAX_UNSIGNED) 1<<target), *reg);
@@ -309,7 +364,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 	  if(j >= 0)
 	    tnot = reg->node[j].amplitude;
 
-	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	  if(iset)
 	    reg->node[i].amplitude = m.t[2] * tnot + m.t[3] * t;
 
 	  else
@@ -317,7 +372,7 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 
 	  if(j >= 0)
 	    {
-	      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	      if(iset)
 		reg->node[j].amplitude = m.t[0] * tnot + m.t[1] * t;
 
 	      else
@@ -325,20 +380,18 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 	    }
 
 	  
-	  else /* new base state will be created */
+	  else /* new basis state will be created */
 	    {
 	      
-	      if((m.t[1] == 0) 
-		 && (reg->node[i].state & ((MAX_UNSIGNED) 1 << target)))
+	      if((m.t[1] == 0) && (iset))
 		break;
-	      if((m.t[2] == 0)
-		 && !(reg->node[i].state & ((MAX_UNSIGNED) 1 << target)))
+	      if((m.t[2] == 0) && !(iset))
 		 break; 
 
 	      reg->node[k].state = reg->node[i].state 
 		^ ((MAX_UNSIGNED) 1 << target);
 
-	      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	      if(iset)
 		reg->node[k].amplitude = m.t[1] * t;
 
 	      else
@@ -350,14 +403,6 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 	  if(j >= 0)
 	    done[j] = 1;
 
-	  if(!reg->node[i].amplitude)
-	    decsize++;
-
-	  if(j >= 0)
-	    {
-	      if(!reg->node[j].amplitude)
-		decsize++;
-	    }
 	}
     }
 
@@ -366,34 +411,33 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
   free(done);
   quantum_memman(-reg->size * sizeof(char));
 
-  /* remove base states with zero amplitude */
+  /* remove basis states with extremely small amplitude */
+
+  for(i=0, j=0; i<reg->size; i++)
+    {
+      if(quantum_prob_inline(reg->node[i].amplitude) < limit)
+	{
+	  j++;
+	  decsize++;
+	}
+      
+      else if(j)
+	{
+	  reg->node[i-j].state = reg->node[i].state;
+	  reg->node[i-j].amplitude = reg->node[i].amplitude;
+	}
+    }
 
   if(decsize)
     {
-      out.width = reg->width;
-      out.size = reg->size - decsize;
-      out.node = calloc(out.size, sizeof(quantum_reg_node));
-      if(!out.node)
+      reg->size -= decsize;
+      reg->node = realloc(reg->node, reg->size * sizeof(quantum_reg_node));
+      if(!reg->node) 
 	{
-	  printf("Not enough memory for %i-sized qubit!\n", out.size);
+	  printf("Not enough memory for %i-sized qubit!\n",
+		 reg->size + addsize);
 	  exit(1);
 	}
-      quantum_memman(out.size * sizeof(quantum_reg_node));
-      out.hashw = reg->hashw;
-      out.hash = reg->hash;
-
-      for(i=0, j=0; i<reg->size; i++)
-	{
-	  if(reg->node[i].amplitude)
-	    {
-	      out.node[j].state = reg->node[i].state;
-	      out.node[j].amplitude = reg->node[i].amplitude;
-	      j++;
-	    }
-	}
-
-      quantum_delete_qureg_hashpreserve(reg);
-      *reg = out;
     }
 
   quantum_decohere(reg);
@@ -417,21 +461,15 @@ quantum_hadamard(int target, quantum_reg *reg)
 
 }
 
-/* Apply a walsh-hadamard gate */
+/* Apply a walsh-hadamard transform */
 
 void
-quantum_walsh(int target, quantum_reg *reg)
+quantum_walsh(int width, quantum_reg *reg)
 {
-  quantum_matrix m;
+  int i;
 
-  m = quantum_new_matrix(2, 2);
-
-  m.t[0] = IMAGINARY*sqrt(1.0/2);  m.t[1] = IMAGINARY*sqrt(1.0/2);
-  m.t[2] = IMAGINARY*sqrt(1.0/2);  m.t[3] = -IMAGINARY*sqrt(1.0/2);
-
-  quantum_gate1(target, m, reg);
-  
-  quantum_delete_matrix(&m);
+  for(i=0; i<width; i++)
+    quantum_hadamard(i, reg);
   
 }
 
@@ -477,13 +515,16 @@ void
 quantum_r_z(int target, float gamma, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(gamma/2);
   
   for(i=0; i<reg->size; i++)
     {
       if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
-	reg->node[i].amplitude *= quantum_cexp(gamma/2);
+	reg->node[i].amplitude *= z;
       else
-	reg->node[i].amplitude *= quantum_cexp(-gamma/2);
+	reg->node[i].amplitude /= z;
     }
 
   quantum_decohere(reg);
@@ -495,10 +536,13 @@ void
 quantum_phase_scale(int target, float gamma, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(gamma);
   
   for(i=0; i<reg->size; i++)
     {
-      reg->node[i].amplitude *= quantum_cexp(gamma);
+      reg->node[i].amplitude *= z;
     }
 
   quantum_decohere(reg);
@@ -511,11 +555,14 @@ void
 quantum_phase_kick(int target, float gamma, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(gamma);
   
   for(i=0; i<reg->size; i++)
     {
       if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
-	reg->node[i].amplitude *= quantum_cexp(gamma);
+	reg->node[i].amplitude *= z;
     }
 
   quantum_decohere(reg);
@@ -527,14 +574,16 @@ void
 quantum_cond_phase(int control, int target, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(pi / ((MAX_UNSIGNED) 1 << (control - target)));
 
   for(i=0; i<reg->size; i++)
     {
       if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control))
 	{
 	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
-	    reg->node[i].amplitude 
-	      *= quantum_cexp(pi / ((MAX_UNSIGNED) 1 << (control - target)));
+	    reg->node[i].amplitude *= z;
 	}
     }
 
@@ -546,14 +595,16 @@ void
 quantum_cond_phase_inv(int control, int target, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(-pi / ((MAX_UNSIGNED) 1 << (control - target)));
 
   for(i=0; i<reg->size; i++)
     {
       if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control))
 	{
 	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
-	    reg->node[i].amplitude 
-	      *= quantum_cexp(-pi / ((MAX_UNSIGNED) 1 << (control - target)));
+	    reg->node[i].amplitude *= z;
 	}
     }
 
@@ -566,13 +617,16 @@ void
 quantum_cond_phase_kick(int control, int target, float gamma, quantum_reg *reg)
 {
   int i;
+  COMPLEX_FLOAT z;
+
+  z = quantum_cexp(gamma);
 
   for(i=0; i<reg->size; i++)
     {
       if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control))
 	{
 	  if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
-	    reg->node[i].amplitude *= quantum_cexp(gamma);
+	    reg->node[i].amplitude *= z;
 	}
      }
   quantum_decohere(reg);

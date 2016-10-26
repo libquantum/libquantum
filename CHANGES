@@ -1,3 +1,15 @@
+libquantum 0.2.1:
+	- Completed GNU/Hurd and FreeBSD ports
+	- Added unbounded toffoli gate
+	- Changed hashing method to linear probing (breaks backward 
+	  compatibility)
+	- Optimized quantum_gate1 and gates using quantum_cexp
+	- Added a bit measurement function that does not remove the
+	  measured bit
+	- Corrected qft, added qft_inv and adjusted shor
+	- Corrected the implementation of the Walsh-Hadamard transform
+	- Supplied version information
+
 libquantum 0.2.0:
 	- Added Quantum Error Correction
 	- Included an Implementation of Grover's algorithm

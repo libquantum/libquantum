@@ -27,11 +27,40 @@
 
 #include "config.h"
 
-extern float quantum_real(COMPLEX_FLOAT a);
-extern float quantum_imag(COMPLEX_FLOAT a);
 extern COMPLEX_FLOAT quantum_conj(COMPLEX_FLOAT a);
 
 extern float quantum_prob (COMPLEX_FLOAT a);
 extern COMPLEX_FLOAT quantum_cexp(float phi);
+
+/* Return the real part of a complex number */
+
+static inline float
+quantum_real(COMPLEX_FLOAT a)
+{
+  float *p = (float *) &a;
+  return p[0];
+}
+
+/* Return the imaginary part of a complex number */
+
+static inline float
+quantum_imag(COMPLEX_FLOAT a)
+{
+  float *p = (float *) &a;
+  return p[1];
+}
+
+/* Calculate the square of a complex number (i.e. the probability) */
+
+static inline float 
+quantum_prob_inline(COMPLEX_FLOAT a)
+{
+  float r, i;
+
+  r = quantum_real(a);
+  i = quantum_imag(a);
+
+  return r * r + i * i;
+}
 
 #endif

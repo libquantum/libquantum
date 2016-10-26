@@ -26,44 +26,44 @@ SHELL=/bin/sh
 # Target directory prefix
 
 PREFIX=@prefix@
+EPREFIX=${PREFIX}
 
 # Other directories
 
-LIBDIR=${PREFIX}/lib
+LIBDIR=${EPREFIX}/lib
 INCLUDEDIR=${PREFIX}/include
 top_builddir=.
 
-# Release information
+# Version information
 
-MAJOR=0
-MINOR=2
-RELEASE=0
+VERSION=@PACKAGE_VERSION@
 
 # Tools needed to build libquantum
 
-CC=@CC@ -O2 -g -pg
+CC=@CC@
 INSTALL=@INSTALL@
 LIBTOOL=@LIBTOOL@
 
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 2:0:2
+LDFLAGS=-rpath $(LIBDIR) -version-info 3:0:0
 
 # Dependencies
 
 all:	libquantum.la
 
 libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo Makefile
+	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo\
+	Makefile
 	$(LIBTOOL) $(CC) $(LDFLAGS) -o libquantum.la complex.lo measure.lo\
 	matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo qec.lo -lm
+	qureg.lo decoherence.lo qec.lo version.lo -lm
 
 complex.lo: complex.c complex.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c complex.c	
 
-measure.lo: measure.c measure.h matrix.h qureg.h config.h Makefile
+measure.lo: measure.c measure.h matrix.h qureg.h complex.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c measure.c
 
 matrix.lo: matrix.c matrix.h complex.h Makefile
@@ -94,14 +94,11 @@ decoherence.lo: decoherence.c decoherence.h measure.h gates.h qureg.h\
 	complex.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c decoherence.c
 
-qec.lo: qec.c qec.h gates.h qureg.h config.h Makefile
+qec.lo: qec.c qec.h gates.h qureg.h decoherence.h measure.h config.h Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -c qec.c
 
-# Bring this savage back home
-
-install: libquantum.la
-	$(LIBTOOL) $(INSTALL) -m 0644 libquantum.la $(LIBDIR)
-	$(INSTALL) -m 0644 quantum.h $(INCLUDEDIR)
+version.lo: version.c version.h config.h Makefile
+	$(LIBTOOL) $(CC) $(CFLAGS) -c version.c
 
 # Build demos of Shor's and Grover's algorithms
 
@@ -113,6 +110,12 @@ shor: libquantum.la shor.c Makefile
 grover: libquantum.la grover.c Makefile
 	$(LIBTOOL) $(CC) $(CFLAGS) -o grover grover.c -I./ -lquantum -static\
 	-lm
+
+# Bring this savage back home
+
+install: libquantum.la
+	$(LIBTOOL) $(INSTALL) -m 0644 libquantum.la $(LIBDIR)
+	$(INSTALL) -m 0644 quantum.h $(INCLUDEDIR)
 
 # Make everything neat and tidy
 
@@ -127,10 +130,9 @@ distclean:
 
 dist:
 	-rm quantum.h config.h
-	mkdir libquantum-$(MAJOR).$(MINOR).$(RELEASE)
+	mkdir libquantum-$(VERSION)
 	cp *.c *.h quantum.h.in Makefile.in config.h.in configure configure.in\
 	COPYING	install-sh ltmain.sh config.sub config.guess README INSTALL\
-	CHANGES	libquantum-$(MAJOR).$(MINOR).$(RELEASE)
-	tar czf libquantum-$(MAJOR).$(MINOR).$(RELEASE).tar.gz\
-	libquantum-$(MAJOR).$(MINOR).$(RELEASE)/
-	rm -rf libquantum-$(MAJOR).$(MINOR).$(RELEASE)
+	CHANGES	libquantum-$(VERSION)
+	tar czf libquantum-$(VERSION).tar.gz libquantum-$(VERSION)/
+	rm -rf libquantum-$(VERSION)

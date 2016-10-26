@@ -1,5 +1,5 @@
-/* complex.c: Complex number functions
-
+/* version.h: Declarations for version.c
+   
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
@@ -21,35 +21,10 @@
 
 */
 
-#include <math.h>
+#ifndef __VERSION_H
 
-#include "complex.h"
-#include "config.h"
+#define __VERSION_H
 
-/* Return the complex conjugate of a complex number */
+extern const char * quantum_get_version();
 
-COMPLEX_FLOAT
-quantum_conj(COMPLEX_FLOAT a)
-{
-  float r, i;
-
-  r = quantum_real(a);
-  i = quantum_imag(a);
-
-  return r - IMAGINARY * i;
-}
-
-/* Calculate the square of a complex number (i.e. the probability) */
-
-float 
-quantum_prob(COMPLEX_FLOAT a)
-{
-  return quantum_prob_inline(a);
-}
-
-/* Calculate e^(i * phi) */
-
-COMPLEX_FLOAT quantum_cexp(float phi)
-{
-  return cos(phi) + IMAGINARY * sin(phi);
-}
+#endif

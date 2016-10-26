@@ -27,6 +27,7 @@
 #include "gates.h"
 #include "config.h"
 #include "decoherence.h"
+#include "measure.h"
 
 /* Type of the QEC. Currently implemented versions are:
 

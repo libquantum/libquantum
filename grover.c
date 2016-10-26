@@ -120,14 +120,6 @@ void grover(int target, quantum_reg *reg)
 
 }
 
-void print_grover(quantum_reg *reg)
-{
-  int i;
-
-  for(i=0;i<reg->size;i++)
-    printf("%llu %f\n", reg->node[i].state, __real__ reg->node[i].amplitude);
-}
-
 int main(int argc, char **argv)
 {
   quantum_reg reg;

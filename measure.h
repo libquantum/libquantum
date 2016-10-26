@@ -33,5 +33,6 @@ extern double quantum_frand();
 
 extern MAX_UNSIGNED quantum_measure(quantum_reg reg);
 extern int quantum_bmeasure(int pos, quantum_reg *reg);
+extern int quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg);
 
 #endif

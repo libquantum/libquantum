@@ -1,4 +1,4 @@
-libquantum 0.2.0 installation guide
+libquantum 0.2.1 installation guide
 -----------------------------------
 
 Contents:
@@ -13,7 +13,7 @@ Contents:
 ---------------
 
 libquantum needs a C compiler with complex number support (C99
-prefered). A recent gcc (>=2.9.5) will do the job. Furthermore, the
+prefered). A recent gcc (>=2.95) will do the job. Furthermore, the
 host must support 64-bit integers, even if it is not a 64-bit machine.
 
 If you encounter any difficulties while building, installing or using
@@ -27,7 +27,7 @@ libquantum@enyo.de.
 As libquantum was created using autoconf and libtool, this step should
 not be a major problem. Simply extract the tarball to a directory:
 
-	tar xzvf libquantum-0.1.0.tar.gz
+	tar xzvf libquantum-0.2.1.tar.gz
 
 Next, run the configure script:
 

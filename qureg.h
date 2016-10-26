@@ -40,16 +40,6 @@ struct quantum_reg_node_struct
 
 typedef struct quantum_reg_node_struct quantum_reg_node;
 
-/* One element of the hash table */
-
-struct quantum_reg_hash_struct
-{
-  int i;
-  struct quantum_reg_hash_struct *next;
-};
-
-typedef struct quantum_reg_hash_struct quantum_reg_hash;
-
 /* The quantum register */
 
 struct quantum_reg_struct
@@ -58,7 +48,7 @@ struct quantum_reg_struct
   int size;     /* number of non-zero vectors */
   int hashw;    /* width of the hash array */
   quantum_reg_node *node;
-  quantum_reg_hash **hash;
+  int *hash;
 };
 
 typedef struct quantum_reg_struct quantum_reg;
@@ -75,8 +65,6 @@ extern void quantum_print_expn(quantum_reg reg);
 
 extern void quantum_addscratch(int bits, quantum_reg *reg);
 
-extern void quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg);
-extern void quantum_delete_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg);
 extern void quantum_print_hash(quantum_reg reg);
 
 /* Our 64-bit multiplicative hash function */
@@ -100,56 +88,40 @@ static inline int
 quantum_get_state(MAX_UNSIGNED a, quantum_reg reg)
 {
   int i;
-  quantum_reg_hash *p;
 
   i = quantum_hash64(a, reg.hashw);
 
-  if(reg.hash[i])
+  while(reg.hash[i])
     {
-      p = reg.hash[i];
-
-      do 
-	{
-	  if(reg.node[p->i].state == a)
-	    return p->i;
-	  if(p->next)
-	    p = p->next;
-	} while(p->next);
-      
-      if(reg.node[p->i].state == a)
-	return p->i;
+      if(reg.node[reg.hash[i]-1].state == a)
+	return reg.hash[i]-1;
+      i++;
+      if(i == (1 << reg.hashw))
+	i = 0;
     }
-
+  
   return -1;
+    
 }
 
-/* Update an element of the hash table */
+/* Add an element to the hash table */
 
 static inline void
-quantum_change_hash(MAX_UNSIGNED a, int oldpos, MAX_UNSIGNED b, int pos, 
-	    quantum_reg *reg)
+quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg)
 {
-  int i, j;
-  quantum_reg_hash *p, *q=0;
+  int i;
 
   i = quantum_hash64(a, reg->hashw);
 
-  p = reg->hash[i];
-  q = reg->hash[i];
-  j = p->i;
+  while(reg->hash[i])
+    {
+      i++;
+      if(i == (1 << reg->hashw))
+	i = 0;
+    }
 
-  while(p->i != oldpos)
-    p = p->next;
+  reg->hash[i] = pos+1;
 
-  p->i = j;
-  reg->hash[i] = q->next;
-
-  i = quantum_hash64(b, reg->hashw);
-  
-  q->next = reg->hash[i];
-  reg->hash[i] = q;
-  q->i = pos;
 }
 
 #endif
-

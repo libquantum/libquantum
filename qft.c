@@ -40,10 +40,20 @@ void quantum_qft(int width, quantum_reg *reg)
       quantum_hadamard(i, reg);
     }
 
-  for(i=0; i<width/2; i++)
+}
+
+
+void quantum_qft_inv(int width, quantum_reg *reg)
+{
+  int i, j;
+
+  for(i=0; i<width; i++)
     {
-      quantum_cnot(i, width-i-1, reg);
-      quantum_cnot(width-i-1, i, reg);
-      quantum_cnot(i, width-i-1, reg);
+      quantum_hadamard(i, reg);
+
+      for(j=i+1; j<width; j++)
+	quantum_cond_phase_inv(j, i, reg);
+
     }
+
 }

@@ -80,7 +80,14 @@ int main(int argc, char **argv) {
     }
 
   quantum_qft(width, &qr); 
-
+  
+  for(i=0; i<width/2; i++)
+    {
+      quantum_cnot(i, width-i-1, &qr);
+      quantum_cnot(width-i-1, i, &qr);
+      quantum_cnot(i, width-i-1, &qr);
+    }
+  
   //  quantum_print_qureg(qr);
 
   c=quantum_measure(qr);

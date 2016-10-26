@@ -69,13 +69,13 @@ quantum_matrix2qureg(quantum_matrix *m, int width)
 
   /* Allocate the hash table */
 
-  reg.hash = calloc(1 << reg.hashw, sizeof(quantum_reg_hash *));
+  reg.hash = calloc(1 << reg.hashw, sizeof(int));
   if(!reg.hash)
     {
       printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
       exit(1);
     }
-  quantum_memman((1 << reg.hashw) * sizeof(quantum_reg_hash *));
+  quantum_memman((1 << reg.hashw) * sizeof(int));
 
   /* Copy the nonzero amplitudes of the vector into the quantum
      register */
@@ -120,13 +120,13 @@ quantum_new_qureg(MAX_UNSIGNED initval, int width)
 
   /* Allocate the hash table */
 
-  reg.hash = calloc(1 << reg.hashw, sizeof(quantum_reg_hash *));
+  reg.hash = calloc(1 << reg.hashw, sizeof(int));
   if(!reg.hash)
     {
       printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
       exit(1);
     }
-  quantum_memman((1 << reg.hashw) * sizeof(quantum_reg_hash *));
+  quantum_memman((1 << reg.hashw) * sizeof(int));
 
   /* Initialize the quantum register */
   
@@ -161,22 +161,8 @@ quantum_qureg2matrix(quantum_reg reg)
 void
 quantum_destroy_hash(quantum_reg *reg)
 {
-  int i;
-  quantum_reg_hash *p;
-
-  for(i=0; i<(1 << reg->hashw); i++)
-    {
-      while(reg->hash[i])
-	{
-	  p = reg->hash[i]->next;
-	  free(reg->hash[i]);
-	  quantum_memman(-sizeof(quantum_reg_hash));
-	  reg->hash[i] = p;
-	}
-    }
-
   free(reg->hash);
-  quantum_memman(-(1 << reg->hashw) * sizeof(quantum_reg_hash *));
+  quantum_memman(-(1 << reg->hashw) * sizeof(int));
 }
 
 /* Delete a quantum register */
@@ -205,12 +191,16 @@ quantum_delete_qureg_hashpreserve(quantum_reg *reg)
 void
 quantum_print_qureg(quantum_reg reg)
 {
-  int i;
+  int i,j;
   
   for(i=0; i<reg.size; i++)
     {
-      printf("%f %+fi|%lli>\n", quantum_real(reg.node[i].amplitude),
-	     quantum_imag(reg.node[i].amplitude), reg.node[i].state);
+      printf("%f %+fi|%lli> (%e) (|", quantum_real(reg.node[i].amplitude),
+	     quantum_imag(reg.node[i].amplitude), reg.node[i].state, 
+	     quantum_prob_inline(reg.node[i].amplitude));
+      for(j=reg.width-1;j>=0;j--)
+	printf("%i", ((((MAX_UNSIGNED) 1 << j) & reg.node[i].state) > 0));
+      printf(">)\n");
     }
 
   printf("\n");
@@ -249,122 +239,19 @@ quantum_addscratch(int bits, quantum_reg *reg)
     }
 }
 
-/* Add an element to the hash table */
-
-void
-quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg)
-{
-  int i;
-  quantum_reg_hash *p;
-
-  i = quantum_hash64(a, reg->hashw);
-
-  p = calloc(1, sizeof(quantum_reg_hash));
-  if(!p)
-    {
-      printf("Not enough memory for hash element!\n");
-      exit(1);
-    }
-
-  quantum_memman(sizeof(quantum_reg_hash));
-
-  p->i = pos;
-  p->next = reg->hash[i];
-
-  reg->hash[i] = p;
-  
-}
-
-/* Remove an element from the hash table */
-
-void
-delete_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg)
-{
-  int i;
-  quantum_reg_hash *p, *q=0;
-
-  i = quantum_hash64(a, reg->hashw);
-
-  p = reg->hash[i];
-
-  while(p->i != pos)
-    {
-      q = p;
-      p = p->next;
-    }
-
-  if(q)
-    {
-      q->next = p->next;
-      free(p);
-    }
-  else
-    {
-      if(p)
-	{
-	  reg->hash[i] = p->next;
-	  free(p);
-	}
-      else
-	{
-	  reg->hash[i] = 0;
-	  free(reg->hash[i]);
-	}
-    }
-}
-
 /* Print the hash table to stdout and test if the hash table is
    corrupted */
 
 void
-print_hash(quantum_reg reg)
+quantum_print_hash(quantum_reg reg)
 {
   int i;
-  quantum_reg_hash *p;
-  char *done;
-
-  done = calloc(reg.size, sizeof(char));
-  if(!done)
-    {
-      printf("Not enough memory for %i bytes array!\n", 
-	     (reg.size)*sizeof(char));
-      exit(1);
-    }
 
   for(i=0; i < (1 << reg.hashw); i++)
     {
-      printf("%i: ", i);
-
-      if(reg.hash[i])
-	{
-	  p = reg.hash[i];
-
-	  while(p->next)
-	    {
-	      printf("%llu ", reg.node[p->i].state);
-	      if(quantum_hash64(reg.node[p->i].state, reg.hashw) != i)
-		printf(" Corrupted hash table!\n... ");
-	      done[p->i] = 1;
-	      p = p->next;
-	    }
-
-	  printf("%llu", reg.node[p->i].state);
-	  if(quantum_hash64(reg.node[p->i].state, reg.hashw) != i)
-	    printf(" Corrupted hash table!");
-	  done[p->i] = 1;
-	}
-
-      printf("\n");
+      if(i)
+	printf("%i: %i %llu\n", i, reg.hash[i]-1, 
+	       reg.node[reg.hash[i]-1].state);
     }
 
-  /* Test if there are elements in the quantum register which are not
-     in the hash table */
-
-  for(i=0; i<reg.size; i++)
-    {
-      if(!done[i])
-	printf("Corrupted hash table: %llu is detached!\n", reg.node[i].state);
-    }
-
-  free(done);
 }

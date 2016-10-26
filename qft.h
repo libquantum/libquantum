@@ -1,4 +1,4 @@
-/* qft.c: Declarations for qft.c
+/* qft.h: Declarations for qft.c
    
    Copyright 2003 Bjoern Butscher, Hendrik Weimer
 
@@ -26,5 +26,7 @@
 #define __QFT_H
 
 extern void quantum_qft(int width, quantum_reg *reg);
+
+extern void quantum_qft_inv(int width, quantum_reg *reg);
 
 #endif

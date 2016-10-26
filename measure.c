@@ -59,8 +59,8 @@ quantum_measure(quantum_reg reg)
 	 given base state - r, return the base state as the
 	 result. Otherwise, continue with the next base state. */
 
-      r -= quantum_prob(reg.node[i].amplitude);
-      if(quantum_prob(reg.node[i].amplitude) >= r)
+      r -= quantum_prob_inline(reg.node[i].amplitude);
+      if(quantum_prob_inline(reg.node[i].amplitude) >= r)
 	return reg.node[i].state;
     }
 
@@ -86,14 +86,14 @@ quantum_bmeasure(int pos, quantum_reg *reg)
   MAX_UNSIGNED lpat=0, rpat=0, pos2;
   quantum_reg out;
 
-  pos2 = 1 << pos;
+  pos2 = (MAX_UNSIGNED) 1 << pos;
 
   /* Sum up the probability for 0 being the result */
 
   for(i=0; i<reg->size; i++)
     {
       if(!(reg->node[i].state & pos2))
-	pa += quantum_prob(reg->node[i].amplitude);
+	pa += quantum_prob_inline(reg->node[i].amplitude);
     }
 
   /* Compare the probability for 0 with a random number and determine
@@ -115,7 +115,7 @@ quantum_bmeasure(int pos, quantum_reg *reg)
 	    reg->node[i].amplitude = 0;
 	  else
 	    {
-	      d += quantum_prob(reg->node[i].amplitude);
+	      d += quantum_prob_inline(reg->node[i].amplitude);
 	      size++;
 	    }
 	}
@@ -125,7 +125,7 @@ quantum_bmeasure(int pos, quantum_reg *reg)
 	    reg->node[i].amplitude = 0;
 	  else
 	    {
-	      d += quantum_prob(reg->node[i].amplitude);
+	      d += quantum_prob_inline(reg->node[i].amplitude);
 	      size++;
 	    }
 	}
@@ -163,6 +163,96 @@ quantum_bmeasure(int pos, quantum_reg *reg)
 	  lpat &= reg->node[i].state;
   
 	  out.node[j].state = (lpat >> 1) | rpat;
+	  out.node[j].amplitude = reg->node[i].amplitude * 1 / (float) sqrt(d);
+	
+	  j++;
+	}
+    }
+
+  quantum_delete_qureg_hashpreserve(reg);
+  *reg = out;
+  return result;
+}
+
+/* Measure a single bit, but do not remove it from the quantum
+   register */
+
+int
+quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
+{
+  int i, j;
+  int size=0, result=0;
+  double d=0, pa=0, r;
+  MAX_UNSIGNED pos2;
+  quantum_reg out;
+
+  pos2 = (MAX_UNSIGNED) 1 << pos;
+
+  /* Sum up the probability for 0 being the result */
+
+  for(i=0; i<reg->size; i++)
+    {
+      if(!(reg->node[i].state & pos2))
+	pa += quantum_prob_inline(reg->node[i].amplitude);
+    }
+
+  /* Compare the probability for 0 with a random number and determine
+     the result of the measurement */
+
+  r = quantum_frand();
+  
+  if (r > pa)
+    result = 1;
+
+  /* Eradicate all amplitudes of base states which have been ruled out
+     by the measurement and get the absolute of the new register */
+
+  for(i=0;i<reg->size;i++)
+    {
+      if(reg->node[i].state & pos2)
+	{
+	  if(!result)
+	    reg->node[i].amplitude = 0;
+	  else
+	    {
+	      d += quantum_prob_inline(reg->node[i].amplitude);
+	      size++;
+	    }
+	}
+      else
+	{
+	  if(result)
+	    reg->node[i].amplitude = 0;
+	  else
+	    {
+	      d += quantum_prob_inline(reg->node[i].amplitude);
+	      size++;
+	    }
+	}
+    }
+
+  /* Build the new quantum register */
+
+  out.size = size;
+  out.node = calloc(size, sizeof(quantum_reg_node));
+  if(!out.node)
+    {
+      printf("Not enough memory for %i-sized qubit!\n", size);
+      exit(1);
+    }
+  quantum_memman(size * sizeof(quantum_reg_node));
+  out.hashw = reg->hashw;
+  out.hash = reg->hash;
+  out.width = reg->width;
+
+  /* Determine the numbers of the new base states and norm the quantum
+     register */
+  
+  for(i=0, j=0; i<reg->size; i++)
+    {
+      if(reg->node[i].amplitude)
+	{
+	  out.node[j].state = reg->node[i].state;
 	  out.node[j].amplitude = reg->node[i].amplitude * 1 / (float) sqrt(d);
 	
 	  j++;

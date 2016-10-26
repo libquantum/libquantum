@@ -46,16 +46,6 @@ struct quantum_reg_node_struct
 
 typedef struct quantum_reg_node_struct quantum_reg_node;
 
-/* One element of the hash table */
-
-struct quantum_reg_hash_struct
-{
-  int i;
-  struct quantum_reg_hash_struct *next;
-};
-
-typedef struct quantum_reg_hash_struct quantum_reg_hash;
-
 /* The quantum register */
 
 struct quantum_reg_struct
@@ -64,7 +54,7 @@ struct quantum_reg_struct
   int size;     /* number of non-zero vectors */
   int hashw;    /* width of the hash array */
   quantum_reg_node *node;
-  quantum_reg_hash **hash;
+  int *hash;
 };
 
 typedef struct quantum_reg_struct quantum_reg;
@@ -77,6 +67,7 @@ extern void quantum_addscratch(int bits, quantum_reg *reg);
 extern void quantum_cnot(int control, int target, quantum_reg *reg);
 extern void quantum_toffoli(int control1, int control2, int target, 
 			    quantum_reg *reg);
+extern void quantum_unbounded_toffoli(int controlling, quantum_reg *reg, ...);
 extern void quantum_sigma_x(int target, quantum_reg *reg);
 extern void quantum_sigma_y(int target, quantum_reg *reg);
 extern void quantum_sigma_z(int target, quantum_reg *reg);
@@ -87,7 +78,7 @@ extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
 extern void quantum_phase_scale(int target, float gamma, quantum_reg *reg);
 extern void quantum_phase_kick(int target, float gamma, quantum_reg *reg);
 extern void quantum_hadamard(int target, quantum_reg *reg);
-extern void quantum_walsh(int target, quantum_reg *reg);
+extern void quantum_walsh(int width, quantum_reg *reg);
 extern void quantum_cond_phase(int control, int target, quantum_reg *reg);
 extern void quantum_cond_phase_inv(int control, int target, quantum_reg *reg);
 extern void quantum_cond_phase_kick(int control, int target, float gamma, 
@@ -95,12 +86,14 @@ extern void quantum_cond_phase_kick(int control, int target, float gamma,
 extern int quantum_gate_counter(int inc);
 
 extern void quantum_qft(int width, quantum_reg *reg);
+extern void quantum_qft_inv(int width, quantum_reg *reg);
 
 extern void quantum_exp_mod_n(int N, int x, int width_input, int width, 
 			      quantum_reg *reg);
 
 extern MAX_UNSIGNED quantum_measure(quantum_reg reg);
 extern int quantum_bmeasure(int pos, quantum_reg *reg);
+extern int quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg);
 
 extern quantum_matrix quantum_new_matrix(int cols, int rows);
 extern void quantum_delete_matrix(quantum_matrix *m);
@@ -122,5 +115,7 @@ extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
 
 extern void quantum_qec_encode(int type, int width, quantum_reg *reg);
 extern void quantum_qec_decode(int type, int width, quantum_reg *reg);
+
+extern const char * quantum_get_version();
 
 #endif

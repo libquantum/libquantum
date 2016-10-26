@@ -31,6 +31,8 @@
 extern void quantum_cnot(int control, int target, quantum_reg *reg);
 extern void quantum_toffoli(int control1, int control2, int target, 
 			    quantum_reg *reg);
+extern void quantum_unbounded_toffoli(int controlling, quantum_reg *reg, ...);
+
 extern void quantum_sigma_x(int target, quantum_reg *reg);
 extern void quantum_sigma_y(int target, quantum_reg *reg);
 extern void quantum_sigma_z(int target, quantum_reg *reg);
@@ -46,7 +48,7 @@ extern void quantum_r_y(int target, float gamma, quantum_reg *reg);
 extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
 
 extern void quantum_hadamard(int target, quantum_reg *reg);
-extern void quantum_walsh(int target, quantum_reg *reg);
+extern void quantum_walsh(int width, quantum_reg *reg);
 
 extern void quantum_phase_scale(int target, float gamma, quantum_reg *reg);
 extern void quantum_phase_kick(int target, float gamma, quantum_reg *reg);
