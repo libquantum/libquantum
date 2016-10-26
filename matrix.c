@@ -89,25 +89,25 @@ quantum_delete_matrix(quantum_matrix *m)
 void 
 quantum_print_matrix(quantum_matrix m) 
 {
-  int i, j, l, z=0;
+  int i, j, z=0;
+  /* int l; */
 
   while ((1 << z++) < m.rows);
   z--;
 
   for(i=0; i<m.rows; i++) 
     {
-      for (l=z-1; l>=0; l--) 
+      /* for (l=z-1; l>=0; l--) 
 	{
 	  if ((l % 4 == 3))
 	    printf(" ");
 	  printf("%i", (i >> l) & 1);
-	}
-
-      printf(" | ");
+	  } */
 
       for(j=0; j<m.cols; j++)
-	printf("%f %fi  ", quantum_real(M(m, j, i)), quantum_imag(M(m, j, i)));
-      printf("|\n");
+	printf("% f %+fi\t", quantum_real(M(m, j, i)), 
+	       quantum_imag(M(m, j, i)));
+      printf("\n");
     }
   printf("\n");
 }

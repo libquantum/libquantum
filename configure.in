@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT([libquantum], [0.2.2], [libquantum@enyo.de])
+AC_INIT([libquantum], [0.2.3], [libquantum@enyo.de])
 AC_CONFIG_SRCDIR([classic.c])
 AC_CONFIG_HEADER([config.h])
 
@@ -87,8 +87,9 @@ AC_SUBST(I)
 # Profiling check
 AC_ARG_ENABLE(profiling, 
 	[  --enable-profiling      compile with profiling support],
-	[CFLAGS="$CFLAGS -pg"], 
-	[])
+	[if test $enableval = "yes"
+	    then CFLAGS="$CFLAGS -pg -fprofile-arcs -ftest-coverage"
+	fi], [])
 
 # Enable -Wall for gcc
 if test $CC = "gcc"

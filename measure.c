@@ -1,6 +1,6 @@
 /* measure.c: Quantum register measurement
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -84,12 +84,12 @@ quantum_measure(quantum_reg reg)
 int
 quantum_bmeasure(int pos, quantum_reg *reg)
 {
-  int i, j, k;
-  int size=0, result=0;
-  double d=0, pa=0, r;
-  MAX_UNSIGNED lpat=0, rpat=0, pos2;
+  int i;
+  int result=0;
+  double pa=0, r;
+  MAX_UNSIGNED pos2;
   quantum_reg out;
-
+  
   if(quantum_objcode_put(BMEASURE, pos))
      return 0;
 
@@ -111,73 +111,11 @@ quantum_bmeasure(int pos, quantum_reg *reg)
   if (r > pa)
     result = 1;
 
-  /* Eradicate all amplitudes of base states which have been ruled out
-     by the measurement and get the absolute of the new register */
-
-  for(i=0;i<reg->size;i++)
-    {
-      if(reg->node[i].state & pos2)
-	{
-	  if(!result)
-	    reg->node[i].amplitude = 0;
-	  else
-	    {
-	      d += quantum_prob_inline(reg->node[i].amplitude);
-	      size++;
-	    }
-	}
-      else
-	{
-	  if(result)
-	    reg->node[i].amplitude = 0;
-	  else
-	    {
-	      d += quantum_prob_inline(reg->node[i].amplitude);
-	      size++;
-	    }
-	}
-    }
-
-  /* Build the new quantum register */
-
-  out.width = reg->width-1;
-  out.size = size;
-  out.node = calloc(size, sizeof(quantum_reg_node));
-  if(!out.node)
-    {
-      printf("Not enough memory for %i-sized qubit!\n", size);
-      exit(1);
-    }
-  quantum_memman(size * sizeof(quantum_reg_node));
-  out.hashw = reg->hashw;
-  out.hash = reg->hash;
-
-  /* Determine the numbers of the new base states and norm the quantum
-     register */
-  
-  for(i=0, j=0; i<reg->size; i++)
-    {
-      if(reg->node[i].amplitude)
-	{
-	  for(k=0, rpat=0; k<pos; k++)
-	  rpat += (MAX_UNSIGNED) 1 << k;
-
-	  rpat &= reg->node[i].state;
-
-	  for(k=sizeof(MAX_UNSIGNED)*8-1, lpat=0; k>pos; k--)
-	    lpat += (MAX_UNSIGNED) 1 << k;
-
-	  lpat &= reg->node[i].state;
-  
-	  out.node[j].state = (lpat >> 1) | rpat;
-	  out.node[j].amplitude = reg->node[i].amplitude * 1 / (float) sqrt(d);
-	
-	  j++;
-	}
-    }
+  out = quantum_state_collapse(pos, result, *reg);
 
   quantum_delete_qureg_hashpreserve(reg);
   *reg = out;
+
   return result;
 }
 

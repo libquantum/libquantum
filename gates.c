@@ -1,6 +1,6 @@
 /* gates.c: Basic gates for quantum register manipulation
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -283,8 +283,7 @@ quantum_swaptheleads_omuln_controlled(int control, int width, quantum_reg *reg)
     }
 }
 
-/* Apply the 2x2 matrix M to the target bit. M should be unitary and
-   having a determinant of 1. */
+/* Apply the 2x2 matrix M to the target bit. M should be unitary. */
 
 void 
 quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
@@ -301,6 +300,179 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
       exit(1);
     }
 
+  /* Build hash table */
+
+  for(i=0; i<(1 << reg->hashw); i++)
+    reg->hash[i] = 0;
+      
+  for(i=0; i<reg->size; i++)
+    quantum_add_hash(reg->node[i].state, i, reg);
+
+  /* calculate the number of basis states to be added */
+
+  for(i=0; i<reg->size; i++)
+    {
+      j = quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target),
+			    *reg);
+      if(j == -1)
+	{
+	  if((m.t[1] != 0) && (reg->node[i].state 
+			       & ((MAX_UNSIGNED) 1 << target)))
+	    addsize++;
+	  if((m.t[2] != 0) && !(reg->node[i].state 
+				& ((MAX_UNSIGNED) 1 << target)))
+	    addsize++;
+	}
+    }
+
+  /* allocate memory for the new basis states */
+  
+  reg->node = realloc(reg->node, 
+		      (reg->size + addsize) * sizeof(quantum_reg_node));
+  if(!reg->node) 
+    {
+      printf("Not enough memory for %i-sized qubit!\n", reg->size + addsize);
+      exit(1);
+    }
+  quantum_memman(addsize*sizeof(quantum_reg_node));
+
+  for(i=0; i<addsize; i++)
+    {
+      reg->node[i+reg->size].state = 0;
+      reg->node[i+reg->size].amplitude = 0;
+    }
+
+  done = calloc(reg->size + addsize, sizeof(char));
+  if(!done)
+    {
+      printf("Not enough memory for %i bytes array!\n", 
+	     (reg->size + addsize) * sizeof(char));
+      exit(1);
+    }
+  quantum_memman(reg->size + addsize * sizeof(char));
+
+  k = reg->size;
+
+  limit = (1.0 / ((MAX_UNSIGNED) 1 << reg->width)) / 1000000;
+
+  /* perform the actual matrix multiplication */
+
+  for(i=0; i<reg->size; i++)
+    {
+      if(!done[i])
+	{
+	  /* determine if the target of the basis state is set */
+	  
+	  iset = reg->node[i].state & ((MAX_UNSIGNED) 1 << target);
+
+	  tnot = 0;
+	  j = quantum_get_state(reg->node[i].state 
+				^ ((MAX_UNSIGNED) 1<<target), *reg);
+	  t = reg->node[i].amplitude;
+
+	  if(j >= 0)
+	    tnot = reg->node[j].amplitude;
+
+	  if(iset)
+	    reg->node[i].amplitude = m.t[2] * tnot + m.t[3] * t;
+
+	  else
+	    reg->node[i].amplitude = m.t[0] * t + m.t[1] * tnot;
+
+	  if(j >= 0)
+	    {
+	      if(iset)
+		reg->node[j].amplitude = m.t[0] * tnot + m.t[1] * t;
+
+	      else
+		reg->node[j].amplitude = m.t[2] * t + m.t[3] * tnot;
+	    }
+
+	  
+	  else /* new basis state will be created */
+	    {
+	      
+	      if((m.t[1] == 0) && (iset))
+		break;
+	      if((m.t[2] == 0) && !(iset))
+		 break; 
+
+	      reg->node[k].state = reg->node[i].state 
+		^ ((MAX_UNSIGNED) 1 << target);
+
+	      if(iset)
+		reg->node[k].amplitude = m.t[1] * t;
+
+	      else
+		reg->node[k].amplitude = m.t[2] * t;
+
+	      k++;
+	    }
+
+	  if(j >= 0)
+	    done[j] = 1;
+
+	}
+    }
+
+  reg->size += addsize;
+
+  free(done);
+  quantum_memman(-reg->size * sizeof(char));
+
+  /* remove basis states with extremely small amplitude */
+
+  for(i=0, j=0; i<reg->size; i++)
+    {
+      if(quantum_prob_inline(reg->node[i].amplitude) < limit)
+	{
+	  j++;
+	  decsize++;
+	}
+      
+      else if(j)
+	{
+	  reg->node[i-j].state = reg->node[i].state;
+	  reg->node[i-j].amplitude = reg->node[i].amplitude;
+	}
+    }
+
+  if(decsize)
+    {
+      reg->size -= decsize;
+      reg->node = realloc(reg->node, reg->size * sizeof(quantum_reg_node));
+      if(!reg->node) 
+	{
+	  printf("Not enough memory for %i-sized qubit!\n",
+		 reg->size + addsize);
+	  exit(1);
+	}
+      quantum_memman(-decsize * sizeof(quantum_reg_node));
+    }
+
+  quantum_decohere(reg);
+}
+
+/* Apply the 4x4 matrix M to the target bit, controlled by CONTROL. M
+   should be unitary. */
+
+/* WARNING: THIS FUNCTION IS INCOMPLETE AND DOES NOT WORK AS INTENDED! */
+
+void 
+quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
+{
+  int i, j, k, iset;
+  int addsize=0, decsize=0;
+  COMPLEX_FLOAT t, tnot=0;
+  float limit;
+  char *done;
+
+  if((m.cols != 4) || (m.rows != 4))
+    {
+      printf("Matrix is not a 4x4 matrix!\n");
+      exit(1);
+    }
+  
   /* Build hash table */
 
   for(i=0; i<(1 << reg->hashw); i++)

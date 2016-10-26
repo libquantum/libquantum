@@ -1,6 +1,6 @@
 /* qureg.c: Quantum register management
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -23,7 +23,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <math.h>
 
 #include "matrix.h"
 #include "qureg.h"
@@ -91,10 +91,6 @@ quantum_matrix2qureg(quantum_matrix *m, int width)
 	}
     }
 
-  /* Initialize the PRNG */
-
-  /*  srandom(time(0)); */
-
   return reg;
 }
 
@@ -137,7 +133,7 @@ quantum_new_qureg(MAX_UNSIGNED initval, int width)
 
   /* Initialize the PRNG */
 
-  srandom(time(0));
+  /*  srandom(time(0)); */
 
   c = getenv("QUOBFILE");
 
@@ -176,6 +172,7 @@ quantum_destroy_hash(quantum_reg *reg)
 {
   free(reg->hash);
   quantum_memman(-(1 << reg->hashw) * sizeof(int));
+  reg->hash = 0;
 }
 
 /* Delete a quantum register */
@@ -208,7 +205,7 @@ quantum_print_qureg(quantum_reg reg)
   
   for(i=0; i<reg.size; i++)
     {
-      printf("%f %+fi|%lli> (%e) (|", quantum_real(reg.node[i].amplitude),
+      printf("% f %+fi|%lli> (%e) (|", quantum_real(reg.node[i].amplitude),
 	     quantum_imag(reg.node[i].amplitude), reg.node[i].state, 
 	     quantum_prob_inline(reg.node[i].amplitude));
       for(j=reg.width-1;j>=0;j--)
@@ -322,4 +319,99 @@ quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
     }
 
   return reg;
+}
+
+/* Reduce the state vector after measurement or partial trace */
+
+quantum_reg
+quantum_state_collapse(int pos, int value, quantum_reg reg)
+{
+  int i, j, k;
+  int size=0;
+  double d=0;
+  MAX_UNSIGNED lpat=0, rpat=0, pos2;
+  quantum_reg out;
+
+  pos2 = (MAX_UNSIGNED) 1 << pos;
+
+  /* Eradicate all amplitudes of base states which have been ruled out
+     by the measurement and get the norm of the new register */
+  
+  for(i=0;i<reg.size;i++)
+    {
+      if(((reg.node[i].state & pos2) && value) 
+	 || (!(reg.node[i].state & pos2) && !value))
+	{
+	  d += quantum_prob_inline(reg.node[i].amplitude);
+	  size++;
+	}
+    }
+
+  /* Build the new quantum register */
+
+  out.width = reg.width-1;
+  out.size = size;
+  out.node = calloc(size, sizeof(quantum_reg_node));
+  if(!out.node)
+    {
+      printf("Not enough memory for %i-sized quantum register!\n", size);
+      exit(1);
+    }
+  quantum_memman(size * sizeof(quantum_reg_node));
+  out.hashw = reg.hashw;
+  out.hash = reg.hash;
+
+  /* Determine the numbers of the new base states and norm the quantum
+     register */
+  
+  for(i=0, j=0; i<reg.size; i++)
+    {
+      if(((reg.node[i].state & pos2) && value) 
+	 || (!(reg.node[i].state & pos2) && !value))
+	{
+	  for(k=0, rpat=0; k<pos; k++)
+	  rpat += (MAX_UNSIGNED) 1 << k;
+
+	  rpat &= reg.node[i].state;
+
+	  for(k=sizeof(MAX_UNSIGNED)*8-1, lpat=0; k>pos; k--)
+	    lpat += (MAX_UNSIGNED) 1 << k;
+
+	  lpat &= reg.node[i].state;
+  
+	  out.node[j].state = (lpat >> 1) | rpat;
+	  out.node[j].amplitude = reg.node[i].amplitude * 1 / (float) sqrt(d);
+	
+	  j++;
+	}
+    }
+
+  return out;
+
+}
+
+/* Compute the dot product of two quantum registers */
+
+COMPLEX_FLOAT
+quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2)
+{
+  int i, j;
+  COMPLEX_FLOAT f = 0;
+
+  for(i=0; i<(1 << reg2->hashw); i++)
+    reg2->hash[i] = 0;
+      
+  for(i=0; i<reg2->size; i++)
+    quantum_add_hash(reg2->node[i].state, i, reg2);
+
+  for(i=0; i<reg1->size; i++)
+    {
+      j = quantum_get_state(reg1->node[i].state, *reg2);
+
+      if(j > -1) /* state exists in reg2 */
+	f += quantum_conj(reg1->node[i].amplitude) * reg2->node[j].amplitude;
+    }
+
+  return f;
+
 }

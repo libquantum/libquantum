@@ -1,3 +1,10 @@
+libquantum 0.2.3:
+	- Added density operator formalism
+	- Added functions for dot product and purity
+	- Usage of fabsf led to trouble on Solaris, replaced by fabs
+	- Qureg initialization does not seed RNG anymore
+	- Fixed some potential installation problems
+
 libquantum 0.2.2:
 	- Added quantum object code interface
 	- Additional configure options for better portability

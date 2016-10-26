@@ -1,6 +1,6 @@
 /* quantum.h: Header file for libquantum
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -27,6 +27,24 @@
 
 #define COMPLEX_FLOAT @CF_TYPE@
 #define MAX_UNSIGNED @MU_TYPE@
+
+#define quantum_density_wrapper_ubt(reg, ctl, ...) \
+quantum_unbounded_toffoli(ctl, reg, __VA_ARGS__)
+
+#define quantum_density_operation(function, rho, ...) \
+do{ \
+  int quantum_int; \
+  if ((void *) function == quantum_unbounded_toffoli) \
+    { \
+      for(quantum_int=0; quantum_int < rho.num; quantum_int++) \
+        quantum_density_wrapper_ubt(&rho.reg[quantum_int], __VA_ARGS__); \
+    } \
+  else \
+  { \
+    for(quantum_int=0; quantum_int < rho.num; quantum_int++) \
+      function(__VA_ARGS__, &rho.reg[quantum_int]); \
+  } \
+} while(0)
 
 /* A ROWS x COLS matrix with complex elements */
 
@@ -58,6 +76,15 @@ struct quantum_reg_struct
 };
 
 typedef struct quantum_reg_struct quantum_reg;
+
+struct quantum_density_op_struct
+{
+  int num;          /* total number of state vectors */
+  float *prob;      /* probabilities of the state vectors */
+  quantum_reg *reg; /* state vectors */
+};
+
+typedef struct quantum_density_op_struct quantum_density_op;
 
 extern quantum_reg quantum_new_qureg(MAX_UNSIGNED initval, int width);
 extern void quantum_delete_qureg(quantum_reg *reg);
@@ -112,6 +139,8 @@ extern void quantum_decohere(quantum_reg *reg);
 
 extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
 extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
+extern quantum_reg quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2);
+extern COMPLEX_FLOAT quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2);
 
 extern void quantum_qec_encode(int type, int width, quantum_reg *reg);
 extern void quantum_qec_decode(int type, int width, quantum_reg *reg);
@@ -122,5 +151,13 @@ extern void quantum_objcode_start();
 extern void quantum_objcode_stop();
 extern int quantum_objcode_write(char *file);
 extern void quantum_objcode_run(char *file, quantum_reg *reg);
+
+extern quantum_density_op quantum_new_density_op(int num, float *prob,
+						 quantum_reg *reg);
+extern quantum_density_op quantum_qureg2density_op(quantum_reg *reg);
+extern void quantum_reduced_density_op(int pos, quantum_density_op *rho);
+extern void quantum_print_density_matrix(quantum_density_op *rho);
+extern void quantum_delete_density_op(quantum_density_op *rho);
+extern float quantum_purity(quantum_density_op *rho);
 
 #endif

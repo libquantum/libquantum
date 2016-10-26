@@ -1,6 +1,6 @@
 /* classic.c: Classic operations used in libquantum
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -80,7 +80,7 @@ quantum_frac_approx(int *a, int *b, int width)
       num1 = num;
       den1 = den;
 
-    } while(fabsf(((float) num / den) - f) > 1.0 / (2 * (1 << width)));
+    } while(fabs(((double) num / den) - f) > 1.0 / (2 * (1 << width)));
   
   *a = num;
   *b = den;

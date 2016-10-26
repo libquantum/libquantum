@@ -1,6 +1,6 @@
 /* qureg.h: Declarations for qureg.c and inline hashing functions
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -66,6 +66,13 @@ extern void quantum_print_expn(quantum_reg reg);
 extern void quantum_addscratch(int bits, quantum_reg *reg);
 
 extern void quantum_print_hash(quantum_reg reg);
+
+extern quantum_reg quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2);
+
+extern quantum_reg quantum_state_collapse(int bit, int value, 
+					  quantum_reg reg);
+
+extern COMPLEX_FLOAT quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2);
 
 /* Our 64-bit multiplicative hash function */
 
