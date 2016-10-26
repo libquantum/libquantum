@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
   if(argc==1)
     {
-      printf("Usage: sim [number]\n\n");
+      printf("Usage: shor [number]\n\n");
       return 3;
     }
 

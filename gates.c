@@ -404,8 +404,8 @@ quantum_r_x(int target, float gamma, quantum_reg *reg)
 
   m = quantum_new_matrix(2, 2);
 
-  m.t[0] = cos(gamma / 2);             m.t[1] = IMAGINARY * sin(gamma / 2);
-  m.t[2] = IMAGINARY * sin(gamma / 2); m.t[3] = cos(gamma / 2);
+  m.t[0] = cos(gamma / 2);              m.t[1] = -IMAGINARY * sin(gamma / 2);
+  m.t[2] = -IMAGINARY * sin(gamma / 2); m.t[3] = cos(gamma / 2);
 
   quantum_gate1(target, m, reg);
 
@@ -429,6 +429,24 @@ quantum_r_y(int target, float gamma, quantum_reg *reg)
 
   quantum_delete_matrix(&m);
 
+}
+
+/* Apply a rotation about the z-axis by the angle GAMMA */
+
+void
+quantum_r_z(int target, float gamma, quantum_reg *reg)
+{
+  int i;
+  
+  for(i=0; i<reg->size; i++)
+    {
+      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << target))
+	reg->node[i].amplitude *= quantum_cexp(gamma/2);
+      else
+	reg->node[i].amplitude *= quantum_cexp(-gamma/2);
+    }
+
+  quantum_decohere(reg);
 }
 
 /* Apply a phase kick by the angle GAMMA */

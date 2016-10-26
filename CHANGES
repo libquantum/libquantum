@@ -1,0 +1,7 @@
+libquantum 0.1.1:
+	- Completed rotation gates (quantum_r_z)
+	- Fixed a build problem with the demo program
+	- Fixed some header inconsistencies
+
+libquantum 0.1.0:
+	initial public release

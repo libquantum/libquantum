@@ -41,14 +41,15 @@ extern void quantum_swaptheleads_omuln_controlled(int control, int width,
 
 extern void quantum_gate1(int target, quantum_matrix m, quantum_reg *reg);
 
-extern void quantum_r_x(int a, float gamma, quantum_reg *reg);
-extern void quantum_r_y(int a, float gamma, quantum_reg *reg);
+extern void quantum_r_x(int target, float gamma, quantum_reg *reg);
+extern void quantum_r_y(int target, float gamma, quantum_reg *reg);
+extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
 
-extern void quantum_hadamard(int a, quantum_reg *reg);
-extern void quantum_walsh(int a, quantum_reg *reg);
+extern void quantum_hadamard(int target, quantum_reg *reg);
+extern void quantum_walsh(int target, quantum_reg *reg);
 
-extern void quantum_phase_kick(int a, float gamma, quantum_reg *reg);
-extern void quantum_cond_phase(int a, int b, quantum_reg *reg);
+extern void quantum_phase_kick(int target, float gamma, quantum_reg *reg);
+extern void quantum_cond_phase(int control, int target, quantum_reg *reg);
 
 extern int quantum_gate_counter(int inc);
 

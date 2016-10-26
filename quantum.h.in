@@ -74,28 +74,31 @@ extern void quantum_delete_qureg(quantum_reg *reg);
 extern void quantum_print_qureg(quantum_reg reg);
 extern void quantum_addscratch(int bits, quantum_reg *reg);
 
-extern void quantum_cnot(int, int, quantum_reg *);
-extern void quantum_toffoli(int, int, int, quantum_reg *);
-extern void quantum_X_gate(int, quantum_reg *);
-extern void quantum_Y_gate(int a, quantum_reg *reg);
-extern void quantum_Z_gate(int a, quantum_reg *reg);
-extern void quantum_gate1(quantum_matrix m, int a, quantum_reg *reg);
-extern void quantum_r_x(int a, float gamma, quantum_reg *reg);
-extern void quantum_r_y(int a, float gamma, quantum_reg *reg);
-extern void quantum_phase_kick(int a, float gamma, quantum_reg *reg);
-extern void quantum_hadamard(int a, quantum_reg *reg);
-extern void quantum_walsh(int a, quantum_reg *reg);
-extern void quantum_cond_phase(int a, int b, quantum_reg *reg);
+extern void quantum_cnot(int control, int target, quantum_reg *reg);
+extern void quantum_toffoli(int control1, int control2, int target, 
+			    quantum_reg *reg);
+extern void quantum_sigma_x(int target, quantum_reg *reg);
+extern void quantum_sigma_y(int target, quantum_reg *reg);
+extern void quantum_sigma_z(int target, quantum_reg *reg);
+extern void quantum_gate1(int target, quantum_matrix m, quantum_reg *reg);
+extern void quantum_r_x(int target, float gamma, quantum_reg *reg);
+extern void quantum_r_y(int target, float gamma, quantum_reg *reg);
+extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
+extern void quantum_phase_kick(int target, float gamma, quantum_reg *reg);
+extern void quantum_hadamard(int target, quantum_reg *reg);
+extern void quantum_walsh(int target, quantum_reg *reg);
+extern void quantum_cond_phase(int control, int target, quantum_reg *reg);
 extern int quantum_gate_counter(int inc);
 
 extern void quantum_qft(int width, quantum_reg *reg);
 
-extern void quantum_exp_mod_n(int, int, int, int, quantum_reg *);
+extern void quantum_exp_mod_n(int N, int x, int width_input, int width, 
+			      quantum_reg *reg);
 
 extern MAX_UNSIGNED quantum_measure(quantum_reg reg);
 extern int quantum_bmeasure(int pos, quantum_reg *reg);
 
-extern quantum_matrix quantum_new_matrix(int ,int );
+extern quantum_matrix quantum_new_matrix(int cols, int rows);
 extern void quantum_delete_matrix(quantum_matrix *m);
 
 extern int quantum_ipow(int a, int b);
@@ -108,8 +111,6 @@ extern float quantum_prob(COMPLEX_FLOAT a);
 
 extern void quantum_set_decoherence(float lambda);
 extern void quantum_decohere(quantum_reg *reg);
-
-extern void quantum_add_hash(MAX_UNSIGNED a, int pos, quantum_reg *reg);
 
 extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
 extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);

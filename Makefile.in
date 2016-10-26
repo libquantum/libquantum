@@ -37,7 +37,7 @@ top_builddir=.
 
 MAJOR=0
 MINOR=1
-RELEASE=0
+RELEASE=1
 
 # Tools needed to build libquantum
 
@@ -48,7 +48,7 @@ LIBTOOL=@LIBTOOL@
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 1:0:1
+LDFLAGS=-rpath $(LIBDIR) -version-info 1:1:1
 
 # Dependencies
 
@@ -103,23 +103,24 @@ install: libquantum.la
 # Build a demo showing Shor's factoring algorithm
 
 shor: libquantum.la shor.c Makefile
-	$(LIBTOOL) $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum -lm
+	$(LIBTOOL) $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum -static -lm
 
 # Make everything neat and tidy
 
 clean:
 	-rm -rf .libs
-	rm shor libquantum.la *.lo *.o
+	-rm shor libquantum.la *.lo *.o
 
 distclean:
 	-rm -rf .libs
-	rm shor *.lo *.o config.h quantum.h config.status config.log\
+	-rm shor *.lo *.o config.h quantum.h config.status config.log\
 	libquantum.la
 
 dist:
+	-rm quantum.h config.h
 	mkdir libquantum-$(MAJOR).$(MINOR).$(RELEASE)
 	cp *.c *.h quantum.h.in Makefile.in config.h.in configure COPYING\
-	install-sh ltmain.sh config.sub config.guess README INSTALL\
+	install-sh ltmain.sh config.sub config.guess README INSTALL CHANGES\
 	libquantum-$(MAJOR).$(MINOR).$(RELEASE)
 	tar czf libquantum-$(MAJOR).$(MINOR).$(RELEASE).tar.gz\
 	libquantum-$(MAJOR).$(MINOR).$(RELEASE)/
