@@ -1,6 +1,6 @@
 /* density.h: Declarations for density.c
 
-   Copyright 2004 Bjoern Butscher, Hendrik Weimer
+   Copyright 2004, 2005 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -27,23 +27,13 @@
 
 #include "qureg.h"
 
-#define quantum_density_wrapper_ubt(reg, ctl, ...) \
-quantum_unbounded_toffoli(ctl, reg, __VA_ARGS__)
-
 #define quantum_density_operation(function, rho, ...) \
 do{ \
   int quantum_int; \
-  if ((void *) function == quantum_unbounded_toffoli) \
-    { \
-      for(quantum_int=0; quantum_int < rho.num; quantum_int++) \
-        quantum_density_wrapper_ubt(&rho.reg[quantum_int], __VA_ARGS__); \
-    } \
-  else \
-  { \
-    for(quantum_int=0; quantum_int < rho.num; quantum_int++) \
-      function(__VA_ARGS__, &rho.reg[quantum_int]); \
-  } \
+  for(quantum_int=0; quantum_int < rho.num; quantum_int++) \
+    function(__VA_ARGS__, &rho.reg[quantum_int]); \
 } while(0)
+
 
 struct quantum_density_op_struct
 {

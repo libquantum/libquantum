@@ -1,5 +1,26 @@
-# Process this file with autoconf to produce a configure script.
-AC_INIT([libquantum], [0.2.3], [libquantum@enyo.de])
+# configure.in: Process this file with autoconf to produce a configure
+#               script.
+# 
+# Copyright 2003-2005 Bjoern Butscher, Hendrik Weimer
+#
+# This file is part of libquantum
+#
+# libquantum is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published
+# by the Free Software Foundation; either version 2 of the License,
+# or (at your option) any later version.
+#
+# libquantum is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with libquantum; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA
+
+AC_INIT([libquantum], [0.2.4], [libquantum@enyo.de])
 AC_CONFIG_SRCDIR([classic.c])
 AC_CONFIG_HEADER([config.h])
 
@@ -94,6 +115,7 @@ AC_ARG_ENABLE(profiling,
 # Enable -Wall for gcc
 if test $CC = "gcc"
 then
+	AC_DEFINE(HAVE_GCC)
 	CFLAGS="$CFLAGS -Wall"
 fi
 

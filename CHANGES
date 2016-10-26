@@ -1,3 +1,7 @@
+libquantum 0.2.4:
+	- Fixed a bug in the wrapper for the density operator formalism
+	  that caused a compiler error when using some gates
+
 libquantum 0.2.3:
 	- Added density operator formalism
 	- Added functions for dot product and purity
