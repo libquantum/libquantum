@@ -6,7 +6,7 @@
 #
 # libquantum is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published
-# by the Free Software Foundation; either version 2 of the License,
+# by the Free Software Foundation; either version 3 of the License,
 # or (at your option) any later version.
 #
 # libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with libquantum; if not, write to the Free Software
-# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-# USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA
 
 # Every Makefile should contain this line
 
@@ -49,30 +49,32 @@ LIBTOOL=@LIBTOOL@
 # Flags passed to C compiler
 
 CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 5:1:2
+LDFLAGS=-rpath $(LIBDIR) -version-info 6:0:3
 
 # Dependencies
 
 all:	libquantum.la
 
-libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo\
-	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo\
-	objcode.lo density.lo Makefile
-	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o libquantum.la complex.lo\
-	measure.lo matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo\
-	classic.lo qureg.lo decoherence.lo qec.lo version.lo objcode.lo\
-	density.lo -lm
+libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo \
+	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo \
+	objcode.lo density.lo error.lo qtime.lo Makefile
+	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o libquantum.la complex.lo \
+	measure.lo matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo \
+	classic.lo qureg.lo decoherence.lo qec.lo version.lo objcode.lo \
+	density.lo error.lo qtime.lo -lm
 
 complex.lo: complex.c complex.h config.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c complex.c
 
-measure.lo: measure.c measure.h matrix.h qureg.h complex.h config.h Makefile
+measure.lo: measure.c measure.h matrix.h qureg.h complex.h config.h error.h \
+	Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c measure.c
 
-matrix.lo: matrix.c matrix.h complex.h Makefile
+matrix.lo: matrix.c matrix.h complex.h error.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c matrix.c
 
-gates.lo: gates.c gates.h matrix.h defs.h qureg.h Makefile
+gates.lo: gates.c gates.h matrix.h defs.h qureg.h error.h decoherence.h \
+	objcode.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c gates.c
 
 oaddn.lo: oaddn.c matrix.h defs.h gates.h qureg.h Makefile
@@ -90,11 +92,12 @@ qft.lo:	qft.c qft.h matrix.h gates.h qureg.h Makefile
 classic.lo: classic.c classic.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c classic.c
 
-qureg.lo: qureg.c qureg.h matrix.h config.h complex.h Makefile
+qureg.lo: qureg.c qureg.h matrix.h config.h complex.h error.h objcode.h \
+	Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c qureg.c
 
-decoherence.lo: decoherence.c decoherence.h measure.h gates.h qureg.h\
-	complex.h config.h Makefile
+decoherence.lo: decoherence.c decoherence.h measure.h gates.h qureg.h \
+	complex.h config.h error.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c decoherence.c
 
 qec.lo: qec.c qec.h gates.h qureg.h decoherence.h measure.h config.h Makefile
@@ -103,34 +106,45 @@ qec.lo: qec.c qec.h gates.h qureg.h decoherence.h measure.h config.h Makefile
 version.lo: version.c version.h config.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c version.c
 
-objcode.lo: objcode.c objcode.h matrix.h gates.h qureg.h measure.h config.h\
-	Makefile
+objcode.lo: objcode.c objcode.h matrix.h gates.h qureg.h measure.h config.h \
+	error.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c objcode.c
 
-density.lo: density.c density.h matrix.h qureg.h complex.h config.h Makefile
+density.lo: density.c density.h matrix.h qureg.h complex.h config.h error.h \
+	Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c density.c
+
+error.lo: error.c error.h Makefile
+	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c error.c
+
+qtime.lo: qtime.c qtime.h qureg.h Makefile
+	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c qtime.c
 
 # Autoconf stuff
 
-Makefile: configure Makefile.in aclocal.m4 config.h.in types.h.in quantum.h.in
-	./configure
+Makefile: config.status Makefile.in aclocal.m4 config.h.in types.h.in \
+	quantum.h.in
+	./config.status
 
 config.h: config.h.in
-	./configure
+	./config.status
 
 configure: configure.in
 	autoconf
+
+config.status: configure
+	./config.status --recheck
 
 # Build demos of Shor's and Grover's algorithms
 
 demos: shor grover
 
 shor: libquantum.la shor.c Makefile
-	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum\
+	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum \
 	-static	-lm
 
 grover: libquantum.la grover.c Makefile
-	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o grover grover.c -I./\
+	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o grover grover.c -I./ \
 	-lquantum -static -lm
 
 # Quantum object code tools
@@ -138,7 +152,7 @@ grover: libquantum.la grover.c Makefile
 quobtools: quobprint quobdump
 
 quobprint: libquantum.la quobprint.c objcode.h Makefile
-	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o quobprint quobprint.c\
+	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o quobprint quobprint.c \
 	-lquantum
 
 quobdump: libquantum.la quobdump.c objcode.h Makefile
@@ -159,19 +173,17 @@ quobtools_install: quobtools
 
 clean:
 	-rm -rf .libs
-	-rm shor grover libquantum.la *.lo *.o
+	-rm shor grover quobprint quobdump libquantum.la *.lo *.o
 
-distclean:
-	-rm -rf .libs
-	-rm shor *.lo *.o config.h quantum.h config.status config.log\
-	libquantum.la
+distclean: clean
+	-rm config.h quantum.h types.h config.status config.log
 
 # Build the source tarball
 
 dist:
 	-rm quantum.h config.h types.h
 	mkdir libquantum-$(VERSION)
-	cp *.c *.h *.in configure COPYING install-sh ltmain.sh config.sub\
+	cp *.c *.h *.in configure COPYING install-sh ltmain.sh config.sub \
 	config.guess aclocal.m4 README INSTALL CHANGES libquantum-$(VERSION)
 	tar czf libquantum-$(VERSION).tar.gz libquantum-$(VERSION)/
 	rm -rf libquantum-$(VERSION)

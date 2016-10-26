@@ -1,3 +1,13 @@
+libquantum 0.9.1:
+	- Added fourth-order Runge-Kutta time evolution
+	- Fixed error in quantum_measure() that caused some register values 
+	  never being measured
+	- Improved error handling
+	- Updated license and FSF contact data
+	- Added arbitrary two-qubit gate
+	- New function two print entire time evolution operator
+	- Fixed Makefile syntax
+
 libquantum 0.2.4:
 	- Fixed a bug in the wrapper for the density operator formalism
 	  that caused a compiler error when using some gates

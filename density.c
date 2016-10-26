@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -29,6 +29,7 @@
 #include "config.h"
 #include "matrix.h"
 #include "complex.h"
+#include "error.h"
 
 /* Build a new density operator from multiple state vectors */
 
@@ -43,18 +44,14 @@ quantum_new_density_op(int num, float *prob, quantum_reg *reg)
   rho.num = num;
   
   rho.prob = calloc(num, sizeof(float));
+
   if(!rho.prob)
-    {
-      printf("Error allocating probability array!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
   
   rho.reg = calloc(num, sizeof(quantum_reg));
+
   if(!rho.reg)
-    {
-      printf("Error allocating state vector array!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
 
   quantum_memman(num * (sizeof(float) + sizeof(quantum_reg)));
 
@@ -112,18 +109,14 @@ quantum_reduced_density_op(int pos, quantum_density_op *rho)
   quantum_reg rtmp;
 
   rho->prob = realloc(rho->prob, 2*rho->num*sizeof(float));
+
   if(!rho->prob)
-    {
-      printf("Error re-allocating probability array!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
 
   rho->reg = realloc(rho->reg, 2*rho->num*sizeof(quantum_reg));
+
   if(!rho->reg)
-    {
-      printf("Error re-allocating state vector array!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
 
   quantum_memman(rho->num * (sizeof(float) + sizeof(quantum_reg)));
 
@@ -157,46 +150,49 @@ quantum_reduced_density_op(int pos, quantum_density_op *rho)
   
 }
 
+/* Convert the density operator to a full density matrix */
+
+quantum_matrix
+quantum_density_matrix(quantum_density_op *rho)
+{
+  int i, j, k, l1, l2, dim;
+  quantum_matrix m;
+
+  dim = 1 << rho->reg[0].width;
+
+  if(dim < 0)
+    quantum_error(QUANTUM_EMLARGE);
+
+  m = quantum_new_matrix(dim, dim);
+
+  for(k=0; k<rho->num; k++)
+    {
+      quantum_reconstruct_hash(&rho->reg[k]);
+
+      for(i=0; i<dim; i++)
+	{
+	  for(j=0; j<dim; j++)
+	    {
+	      l1 = quantum_get_state(i, rho->reg[k]);
+	      l2 = quantum_get_state(j, rho->reg[k]);
+	      if((l1 > -1) && (l2 > -1))
+		M(m, i, j) += rho->prob[k] * rho->reg[k].node[l2].amplitude
+		  * quantum_conj(rho->reg[k].node[l1].amplitude);
+	    }
+	}
+    }
+
+  return m;
+}
+
 /* Print the whole density matrix. */
 
 void
 quantum_print_density_matrix(quantum_density_op *rho)
 {
-  int i, j, k, dim;
   quantum_matrix m;
-  COMPLEX_FLOAT f;
 
-  dim = 1 << rho->reg[0].width;
-
-  if(dim < 0)
-    {
-      printf("Density matrix is too big!\n");
-      exit(1);
-    }
-
-  m = quantum_new_matrix(dim, dim);
-
-  /* \rho_ij = \sum_k p_k <i|\psi_kX\psi_k|j> */
-
-  for(i=0; i<rho->num; i++)
-    {
-      for(j=0; j<rho->reg[i].size; j++)
-	{
-	  M(m, rho->reg[i].node[j].state, rho->reg[i].node[j].state) 
-	    += rho->prob[i] 
-	    * quantum_prob_inline(rho->reg[i].node[j].amplitude);
-	  
-	  for(k=0; k<j; k++)
-	    {
-	      f = rho->prob[i] * quantum_conj(rho->reg[i].node[j].amplitude)
-		* rho->reg[i].node[k].amplitude;
-	      M(m, rho->reg[i].node[j].state , rho->reg[i].node[k].state) += f;
-	      M(m, rho->reg[i].node[k].state , rho->reg[i].node[j].state) 
-		+= quantum_conj(f);
-	    }
-	}
-    }
-
+  m = quantum_density_matrix(rho);
   quantum_print_matrix(m);
   quantum_delete_matrix(&m);
 

@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -39,9 +39,11 @@ extern void quantum_sigma_z(int target, quantum_reg *reg);
 
 extern void quantum_swaptheleads(int width, quantum_reg *reg);
 extern void quantum_swaptheleads_omuln_controlled(int control, int width,
-					  quantum_reg *);
+						  quantum_reg *);
 
 extern void quantum_gate1(int target, quantum_matrix m, quantum_reg *reg);
+extern void quantum_gate2(int target1, int target2, quantum_matrix m, 
+			  quantum_reg *reg);
 
 extern void quantum_r_x(int target, float gamma, quantum_reg *reg);
 extern void quantum_r_y(int target, float gamma, quantum_reg *reg);

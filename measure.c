@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -33,6 +33,7 @@
 #include "complex.h"
 #include "config.h"
 #include "objcode.h"
+#include "error.h"
 
 /* Generate a uniformly distributed random number between 0 and 1 */
 
@@ -64,7 +65,7 @@ quantum_measure(quantum_reg reg)
 	 result. Otherwise, continue with the next base state. */
 
       r -= quantum_prob_inline(reg.node[i].amplitude);
-      if(quantum_prob_inline(reg.node[i].amplitude) >= r)
+      if(0 >= r)
 	return reg.node[i].state;
     }
 
@@ -183,11 +184,10 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
 
   out.size = size;
   out.node = calloc(size, sizeof(quantum_reg_node));
+
   if(!out.node)
-    {
-      printf("Not enough memory for %i-sized qubit!\n", size);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(size * sizeof(quantum_reg_node));
   out.hashw = reg->hashw;
   out.hash = reg->hash;

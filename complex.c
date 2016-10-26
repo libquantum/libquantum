@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -41,7 +41,7 @@ quantum_conj(COMPLEX_FLOAT a)
 
 /* Calculate the square of a complex number (i.e. the probability) */
 
-float 
+float
 quantum_prob(COMPLEX_FLOAT a)
 {
   return quantum_prob_inline(a);

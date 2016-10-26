@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -33,6 +33,7 @@
 #include "decoherence.h"
 #include "qec.h"
 #include "objcode.h"
+#include "error.h"
 
 /* Apply a controlled-not gate */
 
@@ -110,11 +111,10 @@ quantum_unbounded_toffoli(int controlling, quantum_reg *reg, ...)
   int i, j;
 
   controls = malloc(controlling * sizeof(int));
+
   if(!controls)
-    {
-      printf("Error allocating %i-element int array!\n", controlling);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(controlling * sizeof(int));
 
   va_start(bits, reg);
@@ -289,51 +289,40 @@ void
 quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 {
   int i, j, k, iset;
-  int addsize=0, decsize=0;
+  int addsize=0, decsize=0, sorted=1;
   COMPLEX_FLOAT t, tnot=0;
   float limit;
   char *done;
 
   if((m.cols != 2) || (m.rows != 2))
-    {
-      printf("Matrix is not a 2x2 matrix!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_EMSIZE);
 
-  /* Build hash table */
-
-  for(i=0; i<(1 << reg->hashw); i++)
-    reg->hash[i] = 0;
-      
-  for(i=0; i<reg->size; i++)
-    quantum_add_hash(reg->node[i].state, i, reg);
+  quantum_reconstruct_hash(reg);
 
   /* calculate the number of basis states to be added */
 
   for(i=0; i<reg->size; i++)
     {
-      j = quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target),
-			    *reg);
-      if(j == -1)
-	{
-	  if((m.t[1] != 0) && (reg->node[i].state 
-			       & ((MAX_UNSIGNED) 1 << target)))
-	    addsize++;
-	  if((m.t[2] != 0) && !(reg->node[i].state 
-				& ((MAX_UNSIGNED) 1 << target)))
-	    addsize++;
-	}
+      /* determine whether quantum register is sorted */
+
+      if(sorted && (reg->node[i].state != i))
+	sorted = 0;
+
+      /* determine whether XORed basis state already exists */
+
+      if(quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target),
+			   *reg) == -1)
+	addsize++;
     }
 
   /* allocate memory for the new basis states */
   
   reg->node = realloc(reg->node, 
 		      (reg->size + addsize) * sizeof(quantum_reg_node));
+
   if(!reg->node) 
-    {
-      printf("Not enough memory for %i-sized qubit!\n", reg->size + addsize);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(addsize*sizeof(quantum_reg_node));
 
   for(i=0; i<addsize; i++)
@@ -343,17 +332,15 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
     }
 
   done = calloc(reg->size + addsize, sizeof(char));
+
   if(!done)
-    {
-      printf("Not enough memory for %i bytes array!\n", 
-	     (reg->size + addsize) * sizeof(char));
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(reg->size + addsize * sizeof(char));
 
   k = reg->size;
 
-  limit = (1.0 / ((MAX_UNSIGNED) 1 << reg->width)) / 1000000;
+  limit = (1.0 / ((MAX_UNSIGNED) 1 << reg->width)) * epsilon;
 
   /* perform the actual matrix multiplication */
 
@@ -422,56 +409,56 @@ quantum_gate1(int target, quantum_matrix m, quantum_reg *reg)
 
   /* remove basis states with extremely small amplitude */
 
-  for(i=0, j=0; i<reg->size; i++)
+  if(!sorted)
     {
-      if(quantum_prob_inline(reg->node[i].amplitude) < limit)
+      for(i=0, j=0; i<reg->size; i++)
 	{
-	  j++;
-	  decsize++;
+	  if(quantum_prob_inline(reg->node[i].amplitude) < limit)
+	    {
+	      j++;
+	      decsize++;
+	    }
+	  
+	  else if(j)
+	    {
+	      reg->node[i-j].state = reg->node[i].state;
+	      reg->node[i-j].amplitude = reg->node[i].amplitude;
+	    }
 	}
-      
-      else if(j)
+    
+      if(decsize)
 	{
-	  reg->node[i-j].state = reg->node[i].state;
-	  reg->node[i-j].amplitude = reg->node[i].amplitude;
-	}
-    }
+	  reg->size -= decsize;
+	  reg->node = realloc(reg->node, reg->size * sizeof(quantum_reg_node));
+	  
+	  if(!reg->node) 
+	    quantum_error(QUANTUM_ENOMEM);
 
-  if(decsize)
-    {
-      reg->size -= decsize;
-      reg->node = realloc(reg->node, reg->size * sizeof(quantum_reg_node));
-      if(!reg->node) 
-	{
-	  printf("Not enough memory for %i-sized qubit!\n",
-		 reg->size + addsize);
-	  exit(1);
+	  quantum_memman(-decsize * sizeof(quantum_reg_node));
 	}
-      quantum_memman(-decsize * sizeof(quantum_reg_node));
     }
 
   quantum_decohere(reg);
 }
 
-/* Apply the 4x4 matrix M to the target bit, controlled by CONTROL. M
-   should be unitary. */
+/* Apply the 4x4 matrix M to the bits TARGET1 and TARGET2. M should be
+   unitary. 
 
-/* WARNING: THIS FUNCTION IS INCOMPLETE AND DOES NOT WORK AS INTENDED! */
+   Warning: code is mostly untested.*/
 
 void 
-quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
+quantum_gate2(int target1, int target2, quantum_matrix m, quantum_reg *reg)
 {
-  int i, j, k, iset;
+  int i, j, k, l;
   int addsize=0, decsize=0;
-  COMPLEX_FLOAT t, tnot=0;
+  COMPLEX_FLOAT psi_sub[4];
+  int base[4];
+  int bits[2];
   float limit;
   char *done;
 
   if((m.cols != 4) || (m.rows != 4))
-    {
-      printf("Matrix is not a 4x4 matrix!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_EMSIZE);
   
   /* Build hash table */
 
@@ -485,28 +472,22 @@ quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
 
   for(i=0; i<reg->size; i++)
     {
-      j = quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target),
-			    *reg);
-      if(j == -1)
-	{
-	  if((m.t[1] != 0) && (reg->node[i].state 
-			       & ((MAX_UNSIGNED) 1 << target)))
-	    addsize++;
-	  if((m.t[2] != 0) && !(reg->node[i].state 
-				& ((MAX_UNSIGNED) 1 << target)))
-	    addsize++;
-	}
+      if(quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target1),
+			   *reg) == -1)
+	addsize++;
+      if(quantum_get_state(reg->node[i].state ^ ((MAX_UNSIGNED) 1 << target2),
+			   *reg) == -1)
+	addsize++;
     }
 
   /* allocate memory for the new basis states */
   
   reg->node = realloc(reg->node, 
 		      (reg->size + addsize) * sizeof(quantum_reg_node));
+
   if(!reg->node) 
-    {
-      printf("Not enough memory for %i-sized qubit!\n", reg->size + addsize);
-      exit(1);
-    }
+    quantum_error(QUANTUM_EMSIZE);
+
   quantum_memman(addsize*sizeof(quantum_reg_node));
 
   for(i=0; i<addsize; i++)
@@ -516,17 +497,18 @@ quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
     }
 
   done = calloc(reg->size + addsize, sizeof(char));
+
   if(!done)
-    {
-      printf("Not enough memory for %i bytes array!\n", 
-	     (reg->size + addsize) * sizeof(char));
-      exit(1);
-    }
+    quantum_error(QUANTUM_EMSIZE);
+
   quantum_memman(reg->size + addsize * sizeof(char));
 
-  k = reg->size;
+  l = reg->size;
 
   limit = (1.0 / ((MAX_UNSIGNED) 1 << reg->width)) / 1000000;
+
+  bits[0] = target1;
+  bits[1] = target2;
 
   /* perform the actual matrix multiplication */
 
@@ -534,56 +516,38 @@ quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
     {
       if(!done[i])
 	{
-	  /* determine if the target of the basis state is set */
-	  
-	  iset = reg->node[i].state & ((MAX_UNSIGNED) 1 << target);
+	  j = quantum_bitmask(reg->node[i].state, 2, bits);
+	  base[j] = i;
+	  base[j ^ 1] = quantum_get_state(reg->node[i].state 
+					  ^ ((MAX_UNSIGNED) 1 << target2),
+					  *reg);
+	  base[j ^ 2] = quantum_get_state(reg->node[i].state
+					  ^ ((MAX_UNSIGNED) 1 << target1), 
+					  *reg);
+	  base[j ^ 3] = quantum_get_state(reg->node[i].state
+					  ^ ((MAX_UNSIGNED) 1 << target1)
+					  ^ ((MAX_UNSIGNED) 1 << target2),
+					  *reg);
 
-	  tnot = 0;
-	  j = quantum_get_state(reg->node[i].state 
-				^ ((MAX_UNSIGNED) 1<<target), *reg);
-	  t = reg->node[i].amplitude;
-
-	  if(j >= 0)
-	    tnot = reg->node[j].amplitude;
-
-	  if(iset)
-	    reg->node[i].amplitude = m.t[2] * tnot + m.t[3] * t;
-
-	  else
-	    reg->node[i].amplitude = m.t[0] * t + m.t[1] * tnot;
-
-	  if(j >= 0)
+	  for(j=0; j<4; j++)
 	    {
-	      if(iset)
-		reg->node[j].amplitude = m.t[0] * tnot + m.t[1] * t;
-
-	      else
-		reg->node[j].amplitude = m.t[2] * t + m.t[3] * tnot;
+	      if(base[j] == -1)
+		{
+		  base[j] = l;
+		  //		  reg->node[l].state = reg->node[i].state
+		  l++;
+		}
+	      psi_sub[j] = reg->node[base[j]].amplitude;
 	    }
 
-	  
-	  else /* new basis state will be created */
+	  for(j=0; j<4; j++)
 	    {
-	      
-	      if((m.t[1] == 0) && (iset))
-		break;
-	      if((m.t[2] == 0) && !(iset))
-		 break; 
+	      reg->node[base[j]].amplitude = 0;
+	      for(k=0; k<4; k++)
+		reg->node[base[j]].amplitude += M(m, k, j) * psi_sub[k];
 
-	      reg->node[k].state = reg->node[i].state 
-		^ ((MAX_UNSIGNED) 1 << target);
-
-	      if(iset)
-		reg->node[k].amplitude = m.t[1] * t;
-
-	      else
-		reg->node[k].amplitude = m.t[2] * t;
-
-	      k++;
+	      done[base[j]] = 1;
 	    }
-
-	  if(j >= 0)
-	    done[j] = 1;
 
 	}
     }
@@ -591,6 +555,7 @@ quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
   reg->size += addsize;
 
   free(done);
+
   quantum_memman(-reg->size * sizeof(char));
 
   /* remove basis states with extremely small amplitude */
@@ -614,12 +579,10 @@ quantum_gate2(int control, int target, quantum_matrix m, quantum_reg *reg)
     {
       reg->size -= decsize;
       reg->node = realloc(reg->node, reg->size * sizeof(quantum_reg_node));
+
       if(!reg->node) 
-	{
-	  printf("Not enough memory for %i-sized qubit!\n",
-		 reg->size + addsize);
-	  exit(1);
-	}
+	quantum_error(QUANTUM_ENOMEM);
+
       quantum_memman(-decsize * sizeof(quantum_reg_node));
     }
 

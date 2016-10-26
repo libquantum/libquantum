@@ -1,12 +1,12 @@
 /* matrix.c: Matrix operations
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2005 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -27,6 +27,7 @@
 #include "matrix.h"
 #include "config.h"
 #include "complex.h"
+#include "error.h"
 
 /* Statistics of the memory consumption */
 
@@ -59,10 +60,8 @@ quantum_new_matrix(int cols, int rows)
 #endif  
 
   if(!m.t)
-    {
-      printf("Not enogh memory for %ix%i-Matrix!",rows,cols);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(sizeof(COMPLEX_FLOAT) * cols * rows);
 
   return m;
@@ -105,9 +104,34 @@ quantum_print_matrix(quantum_matrix m)
 	  } */
 
       for(j=0; j<m.cols; j++)
-	printf("% f %+fi\t", quantum_real(M(m, j, i)), 
+	printf("%g %+gi ", quantum_real(M(m, j, i)), 
 	       quantum_imag(M(m, j, i)));
       printf("\n");
     }
   printf("\n");
 }
+
+/* Matrix multiplication */
+
+quantum_matrix quantum_mmult(quantum_matrix A, quantum_matrix B)
+{
+  int i, j, k;
+  quantum_matrix C;
+
+  if(A.cols != B.rows)
+    quantum_error(QUANTUM_EMSIZE);
+  
+  C = quantum_new_matrix(B.cols, A.rows);
+
+  for(i=0; i<B.cols; i++)
+    {
+      for(j=0; j<A.rows; j++)
+	{
+	  for(k=0; k<B.rows; k++)
+	    M(C, i, j) += M(A, k, j) * M(B, i, k);
+	}
+    }
+
+  return C;
+}
+	    

@@ -1,4 +1,4 @@
-libquantum 0.2.2 installation guide
+libquantum 0.9.1 installation guide
 -----------------------------------
 
 Contents:
@@ -18,7 +18,7 @@ host must support 64-bit integers, even if it is not a 64-bit machine.
 
 If you encounter any difficulties while building, installing or using
 libquantum, we would like to hear from you. Just send a mail to
-libquantum@enyo.de.
+libquantum@libquantum.de.
 
 
 1. Configure and Make
@@ -27,7 +27,7 @@ libquantum@enyo.de.
 As libquantum was created using autoconf and libtool, this step should
 not be a major problem. Simply extract the tarball to a directory:
 
-	tar xzvf libquantum-0.2.2.tar.gz
+	tar xzvf libquantum-0.9.1.tar.gz
 
 Next, run the configure script:
 
@@ -105,4 +105,4 @@ You can use libquantum as any other C library. Just #include
 with the linker flag -lquantum.
 
 For a detailed guide on programming with libquantum take a look at
-http://www.enyo.de/libquantum/.
+http://www.libquantum.de/.

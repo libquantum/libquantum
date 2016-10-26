@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -32,6 +32,7 @@
 #include "qureg.h"
 #include "gates.h"
 #include "measure.h"
+#include "error.h"
 
 /* status of the objcode functionality (0 = disabled) */
 
@@ -139,11 +140,10 @@ quantum_objcode_start()
   opstatus = 1;
   allocated = 1;
   objcode = malloc(OBJCODE_PAGE * sizeof(char));
+
   if(!objcode)
-    {
-      printf("Error allocating memory for objcode data!\n");
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(OBJCODE_PAGE * sizeof(char));
 }
 
@@ -164,7 +164,7 @@ quantum_objcode_stop()
 int
 quantum_objcode_put(unsigned char operation, ...)
 {
-  int i, size;
+  int i, size = 0;
   va_list args;
   unsigned char buf[80];
   double d;
@@ -237,19 +237,17 @@ quantum_objcode_put(unsigned char operation, ...)
       size = 1;
       break;
     default:
-      printf("Unknown opcode 0x(%X)!\n", operation);
-      exit(1);
+      quantum_error(QUANTUM_EOPCODE);
     }
   
   if((position+size) / OBJCODE_PAGE > position / OBJCODE_PAGE)
     {
       allocated++;
       objcode = realloc(objcode, allocated * OBJCODE_PAGE);
+
       if(!objcode)
-	{
-	  printf("Error reallocating memory for objcode data!\n");
-	  exit(1);
-	}
+	quantum_error(QUANTUM_ENOMEM);
+
       quantum_memman(OBJCODE_PAGE * sizeof(char));
     }
 

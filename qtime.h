@@ -1,6 +1,6 @@
-/* oaddn.h: Declarations for oaddn.c
+/* qtime.h: Declarations for qtime.c
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2006,2007 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -21,30 +21,17 @@
 
 */
 
-#ifndef __OADDN_H
+#ifndef __QTIME_H
 
-#define __OADDN_H
+#define __QTIME_H
 
 #include "qureg.h"
+#include "config.h"
 
-extern void test_sum(int, int, quantum_reg *);
-
-extern void muxfa(int, int, int, int, int, int, int, quantum_reg *);
-
-extern void muxfa_inv(int, int, int, int, int, int, int, quantum_reg *);
-
-extern void muxha(int, int, int, int, int, int, quantum_reg *);
-
-extern void muxha_inv(int, int, int, int, int, int, quantum_reg *);
-
-extern void madd(int, int, int, quantum_reg *);
-
-extern void madd_inv(int, int, int,quantum_reg *);
-
-extern void addn(int,int,int, quantum_reg *);
-
-extern void addn_inv(int, int, int, quantum_reg *);
-
-extern void add_mod_n(int, int, int, quantum_reg *);
+extern void quantum_rk4(quantum_reg *reg, double t, double dt, 
+			quantum_reg H(MAX_UNSIGNED, double));
+extern double quantum_rk4a(quantum_reg *reg, double t, double *dt, 
+			   double epsilon, 
+			   quantum_reg H(MAX_UNSIGNED, double));
 
 #endif

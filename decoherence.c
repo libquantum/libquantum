@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -29,21 +29,22 @@
 #include "qureg.h"
 #include "gates.h"
 #include "complex.h"
+#include "error.h"
 
 /* Status of the decoherence simulation. Non-zero means enabled and
    decoherence effects will be simulated. */
 
-int status = 0;
+int quantum_status = 0;
 
 /* Decoherence parameter. The higher the value, the greater the
    decoherence impact. */
 
-float lambda = 0;
+float quantum_lambda = 0;
 
 float
 quantum_get_decoherence()
 {
-  return lambda;
+  return quantum_lambda;
 }
 
 /* Initialize the decoherence simulation and set the decoherence
@@ -54,11 +55,11 @@ quantum_set_decoherence(float l)
 {
   if(l)
     {
-      status = 1;
-      lambda = l;
+      quantum_status = 1;
+      quantum_lambda = l;
     }
   else
-    status = 0;
+    quantum_status = 0;
 }
 
 /* Perform the actual decoherence of a quantum register for a single
@@ -77,16 +78,14 @@ quantum_decohere(quantum_reg *reg)
 
   quantum_gate_counter(1);
 
-  if(status)
+  if(quantum_status)
     {
       
       nrands = calloc(reg->width, sizeof(float));
+
       if(!nrands)
-	{
-	  printf("Not enough memory for %i-sized array of float!\n", 
-		 reg->width);
-	  exit(1);
-	}
+	quantum_error(QUANTUM_ENOMEM);
+
       quantum_memman(reg->width * sizeof(float));
 
       for(i=0; i<reg->width; i++)
@@ -101,7 +100,7 @@ quantum_decohere(quantum_reg *reg)
 
 	  x = u * sqrt(-2 * log(s) / s);
 
-	  x *= sqrt(2 * lambda);
+	  x *= sqrt(2 * quantum_lambda);
 
 	  nrands[i] = x/2;
 	}

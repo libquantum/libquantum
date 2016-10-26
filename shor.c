@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
   int N;
   int c,q,a,b, factor;
 
-  srandom(time(0));
+  srand(time(0));
 
   if(argc == 1)
     {
@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
     }
   while((quantum_gcd(N, x) > 1) || (x < 2))
     {
-      x = random() % N;
+      x = rand() % N;
     } 
 
   printf("Random seed: %i\n", x);
@@ -97,13 +97,13 @@ int main(int argc, char **argv) {
   if(c==-1)
     {
       printf("Impossible Measurement!\n");
-      exit(1);
+      return 1;
     }
 
   if(c==0)
     {
       printf("Measured zero, try again.\n");
-      exit(2);
+      return 2;
     }
 
   q = 1<<(width);
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
   if(q % 2 == 1)
     {
       printf("Odd period, try again.\n");
-      exit(2);
+      return 2;
     }
 
   printf("Possible period is %i.\n", q);
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
   else
     {
       printf("Unable to determine factors, try again.\n");
-      exit(2);
+      return 2;
     }
     
   quantum_delete_qureg(&qr);

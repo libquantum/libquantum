@@ -6,7 +6,7 @@
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -27,7 +27,11 @@
 #include <stdlib.h>
 #include <time.h>
 
+#ifdef M_PI
+#define pi M_PI
+#else
 #define pi 3.141592654
+#endif
 
 void oracle(int state, quantum_reg *reg)
 {
@@ -72,7 +76,6 @@ void inversion(quantum_reg *reg)
   for(i=0;i<reg->width;i++)
     quantum_sigma_x(i, reg);
 
-  quantum_phase_scale(0, pi/2, reg);
   quantum_hadamard(reg->width-1, reg);
 
   if(reg->width==3)
@@ -98,7 +101,6 @@ void inversion(quantum_reg *reg)
     }
   
   quantum_hadamard(reg->width-1, reg);
-  quantum_phase_scale(0, pi/2, reg);
 
   for(i=0;i<reg->width;i++)
     quantum_sigma_x(i, reg);
@@ -126,7 +128,7 @@ int main(int argc, char **argv)
   quantum_reg reg;
   int i, N, width=0;
 
-  srandom(time(0));
+  srand(time(0));
 
   if(argc==1)
     {

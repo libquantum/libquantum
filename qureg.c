@@ -1,12 +1,12 @@
 /* qureg.c: Quantum register management
 
-   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003, 2004, 2006 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,20 +16,22 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "matrix.h"
 #include "qureg.h"
 #include "config.h"
 #include "complex.h"
 #include "objcode.h"
+#include "error.h"
 
 /* Convert a vector to a quantum register */
 
@@ -40,10 +42,7 @@ quantum_matrix2qureg(quantum_matrix *m, int width)
   int i, j, size=0;
 
   if(m->cols != 1)
-    {
-      printf("Error! Cannot convert a multi-column-matrix (%i)!\n", m->cols);
-      exit(1);
-    }
+    quantum_error(QUANTUM_EMCMATRIX);
 
   reg.width = width;
 
@@ -61,21 +60,19 @@ quantum_matrix2qureg(quantum_matrix *m, int width)
   reg.hashw = width + 2;
 
   reg.node = calloc(size, sizeof(quantum_reg_node));
+
   if(!reg.node)
-    {
-      printf("Not enough memory for %i-sized qubit!\n", size);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(size * sizeof(quantum_reg_node));
 
   /* Allocate the hash table */
 
   reg.hash = calloc(1 << reg.hashw, sizeof(int));
+
   if(!reg.hash)
-    {
-      printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+        
   quantum_memman((1 << reg.hashw) * sizeof(int));
 
   /* Copy the nonzero amplitudes of the vector into the quantum
@@ -109,21 +106,19 @@ quantum_new_qureg(MAX_UNSIGNED initval, int width)
   /* Allocate memory for 1 base state */
 
   reg.node = calloc(1, sizeof(quantum_reg_node));
+
   if(!reg.node)
-    {
-      printf("Not enough memory for %i-sized qubit!\n", 1);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(sizeof(quantum_reg_node));
 
   /* Allocate the hash table */
 
   reg.hash = calloc(1 << reg.hashw, sizeof(int));
+
   if(!reg.hash)
-    {
-      printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman((1 << reg.hashw) * sizeof(int));
 
   /* Initialize the quantum register */
@@ -145,6 +140,30 @@ quantum_new_qureg(MAX_UNSIGNED initval, int width)
     }
 
   quantum_objcode_put(INIT, initval);
+
+  return reg;
+}
+
+/* Returns an empty quantum register of size N */
+
+quantum_reg
+quantum_new_qureg_size(int n, int width)
+{
+  quantum_reg reg;
+
+  reg.width = width;
+  reg.size = n;
+  reg.hashw = 0;
+  reg.hash = 0;
+
+  /* Allocate memory for n basis states */
+
+  reg.node = calloc(n, sizeof(quantum_reg_node));
+
+  if(!reg.node)
+    quantum_error(QUANTUM_ENOMEM);
+
+  quantum_memman(n*sizeof(quantum_reg_node));
 
   return reg;
 }
@@ -180,7 +199,8 @@ quantum_destroy_hash(quantum_reg *reg)
 void
 quantum_delete_qureg(quantum_reg *reg)
 {
-  quantum_destroy_hash(reg);
+  if(reg->hashw && reg->hash)
+    quantum_destroy_hash(reg);
   free(reg->node);
   quantum_memman(-reg->size * sizeof(quantum_reg_node));
   reg->node = 0;
@@ -194,6 +214,38 @@ quantum_delete_qureg_hashpreserve(quantum_reg *reg)
   free(reg->node);
   quantum_memman(-reg->size * sizeof(quantum_reg_node));
   reg->node = 0;
+}
+
+/* Copy the contents of src to dst */
+
+void
+quantum_copy_qureg(quantum_reg *src, quantum_reg *dst)
+{
+  *dst = *src;
+  
+  /* Allocate memory for basis states */
+
+  dst->node = calloc(dst->size, sizeof(quantum_reg_node));
+
+  if(!dst->node)
+    quantum_error(QUANTUM_ENOMEM);
+
+  quantum_memman(dst->size*sizeof(quantum_reg_node));
+
+  /* Allocate the hash table */
+
+  if(dst->hashw)
+    {
+      dst->hash = calloc(1 << dst->hashw, sizeof(int));
+      
+      if(!dst->hash)
+	quantum_error(QUANTUM_ENOMEM);
+
+      quantum_memman((1 << dst->hashw) * sizeof(int));
+    }
+
+  memcpy(dst->node, src->node, src->size*sizeof(quantum_reg_node));
+
 }
 
 /* Print the contents of a quantum register to stdout */
@@ -288,10 +340,8 @@ quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
   
   reg.node = calloc(reg.size, sizeof(quantum_reg_node));
   if(!reg.node) 
-    {
-      printf("Not enough memory for %i-sized qubit!\n", reg.size);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman((reg.size)*sizeof(quantum_reg_node));
 
 
@@ -299,10 +349,8 @@ quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2)
 
   reg.hash = calloc(1 << reg.hashw, sizeof(int));
   if(!reg.hash)
-    {
-      printf("Not enough memory for %i-sized hash!\n", 1 << reg.hashw);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman((1 << reg.hashw) * sizeof(int));
 
   for(i=0; i<reg1->size; i++)
@@ -352,25 +400,24 @@ quantum_state_collapse(int pos, int value, quantum_reg reg)
   out.width = reg.width-1;
   out.size = size;
   out.node = calloc(size, sizeof(quantum_reg_node));
+
   if(!out.node)
-    {
-      printf("Not enough memory for %i-sized quantum register!\n", size);
-      exit(1);
-    }
+    quantum_error(QUANTUM_ENOMEM);
+
   quantum_memman(size * sizeof(quantum_reg_node));
   out.hashw = reg.hashw;
   out.hash = reg.hash;
 
   /* Determine the numbers of the new base states and norm the quantum
      register */
-  
+
   for(i=0, j=0; i<reg.size; i++)
     {
       if(((reg.node[i].state & pos2) && value) 
 	 || (!(reg.node[i].state & pos2) && !value))
 	{
 	  for(k=0, rpat=0; k<pos; k++)
-	  rpat += (MAX_UNSIGNED) 1 << k;
+	    rpat += (MAX_UNSIGNED) 1 << k;
 
 	  rpat &= reg.node[i].state;
 
@@ -378,7 +425,7 @@ quantum_state_collapse(int pos, int value, quantum_reg reg)
 	    lpat += (MAX_UNSIGNED) 1 << k;
 
 	  lpat &= reg.node[i].state;
-  
+
 	  out.node[j].state = (lpat >> 1) | rpat;
 	  out.node[j].amplitude = reg.node[i].amplitude * 1 / (float) sqrt(d);
 	
@@ -398,11 +445,10 @@ quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2)
   int i, j;
   COMPLEX_FLOAT f = 0;
 
-  for(i=0; i<(1 << reg2->hashw); i++)
-    reg2->hash[i] = 0;
-      
-  for(i=0; i<reg2->size; i++)
-    quantum_add_hash(reg2->node[i].state, i, reg2);
+  /* Check whether quantum registers are sorted */
+  
+  if(reg2->hashw)
+    quantum_reconstruct_hash(reg2);
 
   for(i=0; i<reg1->size; i++)
     {
@@ -414,4 +460,218 @@ quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2)
 
   return f;
 
+}
+
+/* Same as above, but without complex conjugation */
+
+COMPLEX_FLOAT
+quantum_dot_product_noconj(quantum_reg *reg1, quantum_reg *reg2)
+{
+  int i, j;
+  COMPLEX_FLOAT f = 0;
+
+  /* Check whether quantum registers are sorted */
+  
+  if(reg2->hashw)
+    quantum_reconstruct_hash(reg2);
+
+  for(i=0; i<reg1->size; i++)
+    {
+      j = quantum_get_state(reg1->node[i].state, *reg2);
+
+      if(j > -1) /* state exists in reg2 */
+	f += reg1->node[i].amplitude * reg2->node[j].amplitude;
+      
+    }
+
+  return f;
+
+}
+
+/* Vector addition of two quantum registers. This is a purely
+   mathematical operation without any physical meaning, so only use it
+   if you know what you are doing. */
+
+quantum_reg
+quantum_vectoradd(quantum_reg *reg1, quantum_reg *reg2)
+{
+  int i, j, k;
+  int addsize = 0;
+  quantum_reg reg;
+
+  quantum_copy_qureg(reg1, &reg);
+  
+  if(reg1->hashw || reg2->hashw)
+    {
+      quantum_reconstruct_hash(reg1);
+      quantum_copy_qureg(reg1, &reg);
+      
+      /* Calculate the number of additional basis states */
+
+      for(i=0; i<reg2->size; i++)
+	{
+	  if(quantum_get_state(reg2->node[i].state, *reg1) == -1)
+	    addsize++;
+	}
+    }
+
+  reg.size += addsize;
+  reg.node = realloc(reg.node, (reg.size)*sizeof(quantum_reg_node));
+  if(!reg.node)
+    quantum_error(QUANTUM_ENOMEM);
+
+  quantum_memman(addsize*sizeof(quantum_reg_node));
+
+  k = reg1->size;
+
+  for(i=0; i<reg2->size; i++)
+    {
+      j = quantum_get_state(reg2->node[i].state, *reg1);
+
+      if(j >= 0)
+	reg.node[j].amplitude += reg2->node[i].amplitude;
+
+      else
+	{
+	  reg.node[k].state = reg2->node[i].state;
+	  reg.node[k].amplitude = reg2->node[i].amplitude;
+	  k++;
+	}
+    }
+  
+  return reg;
+      
+}
+
+/* Same as above, but the result is stored in the first register */
+
+void
+quantum_vectoradd_inplace(quantum_reg *reg1, quantum_reg *reg2)
+{
+  int i, j, k;
+  int addsize = 0;
+
+  if(reg1->hashw || reg2->hashw)
+    {
+      quantum_reconstruct_hash(reg1);
+
+      /* Calculate the number of additional basis states */
+
+      for(i=0; i<reg2->size; i++)
+	{
+	  if(quantum_get_state(reg2->node[i].state, *reg1) == -1)
+	    addsize++;
+	}
+    }
+
+  /* Allocate memory for basis states */
+
+  reg1->node = realloc(reg1->node, (reg1->size+addsize) 
+		       * sizeof(quantum_reg_node));
+
+  if(!reg1->node)
+    quantum_error(QUANTUM_ENOMEM);
+
+  quantum_memman(addsize*sizeof(quantum_reg_node));
+
+  /* Allocate the hash table */
+
+  k = reg1->size;
+
+  for(i=0; i<reg2->size; i++)
+    {
+      j = quantum_get_state(reg2->node[i].state, *reg1);
+
+      if(j >= 0)
+	reg1->node[j].amplitude += reg2->node[i].amplitude;
+
+      else
+	{
+	  reg1->node[k].state = reg2->node[i].state;
+	  reg1->node[k].amplitude = reg2->node[i].amplitude;
+	  k++;
+	}
+    }
+
+  reg1->size += addsize;
+      
+}
+
+
+/* Matrix-vector multiplication for a quantum register. A is a
+   function returning a quantum register containing the row given in
+   the first parameter. An additional parameter (e.g. time) may be
+   supplied as well. */
+
+quantum_reg
+quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double), double t,
+		     quantum_reg *reg)
+{
+  MAX_UNSIGNED i;
+  quantum_reg reg2;
+  quantum_reg tmp;
+
+  reg2.width = reg->width;
+  reg2.size = 1 << reg2.width;
+  reg2.hashw = 0;
+  reg2.hash = 0;
+
+  reg2.node = calloc(reg2.size, sizeof(quantum_reg_node));
+  if(!reg2.node)
+    quantum_error(QUANTUM_ENOMEM);
+
+  quantum_memman(reg2.size*sizeof(quantum_reg_node));
+
+  for(i=0; i<(1<<reg->width); i++)
+    {
+      reg2.node[i].state = i;
+      tmp = A(i, t);
+      reg2.node[i].amplitude = quantum_dot_product_noconj(&tmp, reg);
+      quantum_delete_qureg(&tmp);
+    }
+  
+ 
+  return reg2;
+
+}
+
+/* Scalar multiplication of a quantum register. This is a purely
+   mathematical operation without any physical meaning, so only use it
+   if you know what you are doing. */
+
+void
+quantum_scalar_qureg(COMPLEX_FLOAT r, quantum_reg *reg)
+{
+  int i;
+  
+  for(i=0; i<reg->size; i++)
+      reg->node[i].amplitude *= r;
+}
+
+/* Print the time evolution matrix for a series of gates */
+
+void 
+quantum_print_timeop(int width, void f(quantum_reg *))
+{
+  int i, j;
+  quantum_reg tmp;
+  quantum_matrix m;
+  
+  m = quantum_new_matrix(1 << width, 1 << width);
+
+  for(i=0;i<(1 << width); i++)
+    {
+      tmp = quantum_new_qureg(i, width);
+      f(&tmp);
+      for(j=0; j<tmp.size; j++)
+	M(m, tmp.node[j].state, i) = tmp.node[j].amplitude;
+
+      quantum_delete_qureg(&tmp);
+	  
+    }
+  
+  quantum_print_matrix(m);
+
+  quantum_delete_matrix(&m);
+  
 }

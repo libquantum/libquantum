@@ -1,12 +1,12 @@
 /* quantum.h: Header file for libquantum
 
-   Copyright 2003-2005 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003-2007 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
    libquantum is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published
-   by the Free Software Foundation; either version 2 of the License,
+   by the Free Software Foundation; either version 3 of the License,
    or (at your option) any later version.
 
    libquantum is distributed in the hope that it will be useful, but
@@ -16,8 +16,8 @@
 
    You should have received a copy of the GNU General Public License
    along with libquantum; if not, write to the Free Software
-   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-   USA
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301, USA
 
 */
 
@@ -76,9 +76,11 @@ struct quantum_density_op_struct
 typedef struct quantum_density_op_struct quantum_density_op;
 
 extern quantum_reg quantum_new_qureg(MAX_UNSIGNED initval, int width);
+extern quantum_reg quantum_new_qureg_size(int n, int width);
 extern void quantum_delete_qureg(quantum_reg *reg);
 extern void quantum_print_qureg(quantum_reg reg);
 extern void quantum_addscratch(int bits, quantum_reg *reg);
+extern void quantum_print_timeop(int width, void f(quantum_reg *));
 
 extern void quantum_cnot(int control, int target, quantum_reg *reg);
 extern void quantum_toffoli(int control1, int control2, int target, 
@@ -88,6 +90,8 @@ extern void quantum_sigma_x(int target, quantum_reg *reg);
 extern void quantum_sigma_y(int target, quantum_reg *reg);
 extern void quantum_sigma_z(int target, quantum_reg *reg);
 extern void quantum_gate1(int target, quantum_matrix m, quantum_reg *reg);
+extern void quantum_gate2(int target1, int target2, quantum_matrix m, 
+			  quantum_reg *reg);
 extern void quantum_r_x(int target, float gamma, quantum_reg *reg);
 extern void quantum_r_y(int target, float gamma, quantum_reg *reg);
 extern void quantum_r_z(int target, float gamma, quantum_reg *reg);
@@ -113,6 +117,7 @@ extern int quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg);
 
 extern quantum_matrix quantum_new_matrix(int cols, int rows);
 extern void quantum_delete_matrix(quantum_matrix *m);
+extern quantum_matrix quantum_mmult(quantum_matrix A, quantum_matrix B);
 
 extern int quantum_ipow(int a, int b);
 extern int quantum_gcd(int u, int v);
@@ -130,6 +135,12 @@ extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
 extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
 extern quantum_reg quantum_kronecker(quantum_reg *reg1, quantum_reg *reg2);
 extern COMPLEX_FLOAT quantum_dot_product(quantum_reg *reg1, quantum_reg *reg2);
+extern quantum_reg quantum_vectoradd(quantum_reg *reg1, quantum_reg *reg2);
+extern void quantum_vectoradd_inplace(quantum_reg *reg1, quantum_reg *reg2);
+extern quantum_reg quantum_matrix_qureg(quantum_reg A(MAX_UNSIGNED, double),
+					double t, quantum_reg *reg);
+extern void quantum_scalar_qureg(COMPLEX_FLOAT r, quantum_reg *reg);
+extern void quantum_print_timeop(int width, void f(quantum_reg *));
 
 extern void quantum_qec_encode(int type, int width, quantum_reg *reg);
 extern void quantum_qec_decode(int type, int width, quantum_reg *reg);
@@ -145,8 +156,19 @@ extern quantum_density_op quantum_new_density_op(int num, float *prob,
 						 quantum_reg *reg);
 extern quantum_density_op quantum_qureg2density_op(quantum_reg *reg);
 extern void quantum_reduced_density_op(int pos, quantum_density_op *rho);
+extern quantum_matrix quantum_density_matrix(quantum_density_op *rho);
 extern void quantum_print_density_matrix(quantum_density_op *rho);
 extern void quantum_delete_density_op(quantum_density_op *rho);
 extern float quantum_purity(quantum_density_op *rho);
+
+extern void *quantum_error_handler(void *f(int));
+extern const char *quantum_strerr(int errno);
+extern void quantum_error(int errno);
+
+extern void quantum_rk4(quantum_reg *reg, double t, double dt, 
+			quantum_reg H(MAX_UNSIGNED, double));
+extern double quantum_rk4a(quantum_reg *reg, double t, double *dt, 
+			   double epsilon, 
+			   quantum_reg H(MAX_UNSIGNED, double));
 
 #endif

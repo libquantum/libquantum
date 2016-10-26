@@ -1,6 +1,6 @@
-/* oaddn.h: Declarations for oaddn.c
+/* error.h: Declarations for error.c
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2005 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -21,30 +21,23 @@
 
 */
 
-#ifndef __OADDN_H
+#ifndef __ERROR_H
 
-#define __OADDN_H
+#define __ERROR_H
 
-#include "qureg.h"
+enum {
+  QUANTUM_SUCCESS   = 0,
+  QUANTUM_FAILURE   = 1,
+  QUANTUM_ENOMEM    = 2,
+  QUANTUM_EMLARGE   = 3,
+  QUANTUM_EMSIZE    = 4,
+  QUANTUM_EHASHFULL = 5,
+  QUANTUM_EMCMATRIX = 65536, /* internal errors start at 65536 */
+  QUANTUM_EOPCODE   = 65537
+};
 
-extern void test_sum(int, int, quantum_reg *);
-
-extern void muxfa(int, int, int, int, int, int, int, quantum_reg *);
-
-extern void muxfa_inv(int, int, int, int, int, int, int, quantum_reg *);
-
-extern void muxha(int, int, int, int, int, int, quantum_reg *);
-
-extern void muxha_inv(int, int, int, int, int, int, quantum_reg *);
-
-extern void madd(int, int, int, quantum_reg *);
-
-extern void madd_inv(int, int, int,quantum_reg *);
-
-extern void addn(int,int,int, quantum_reg *);
-
-extern void addn_inv(int, int, int, quantum_reg *);
-
-extern void add_mod_n(int, int, int, quantum_reg *);
+extern void *quantum_error_handler(void *f(int));
+extern const char *quantum_strerr(int errno);
+extern void quantum_error(int errno);
 
 #endif
