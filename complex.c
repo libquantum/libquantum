@@ -22,26 +22,27 @@
 */
 
 #include <math.h>
+#include <complex.h>
 
 #include "complex.h"
 #include "config.h"
 
 /* Return the complex conjugate of a complex number */
 
-COMPLEX_FLOAT
+/*COMPLEX_FLOAT
 quantum_conj(COMPLEX_FLOAT a)
 {
-  float r, i;
+  REAL_FLOAT r, i;
 
   r = quantum_real(a);
   i = quantum_imag(a);
 
   return r - IMAGINARY * i;
-}
+  }*/
 
 /* Calculate the square of a complex number (i.e. the probability) */
 
-float
+double
 quantum_prob(COMPLEX_FLOAT a)
 {
   return quantum_prob_inline(a);
@@ -49,7 +50,7 @@ quantum_prob(COMPLEX_FLOAT a)
 
 /* Calculate e^(i * phi) */
 
-COMPLEX_FLOAT quantum_cexp(float phi)
+COMPLEX_FLOAT quantum_cexp(REAL_FLOAT phi)
 {
   return cos(phi) + IMAGINARY * sin(phi);
 }

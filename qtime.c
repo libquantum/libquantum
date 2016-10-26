@@ -1,6 +1,6 @@
 /* qtime.c: Time evolution of a quantum system
 
-   Copyright 2006,2007 Bjoern Butscher, Hendrik Weimer
+   Copyright 2006-2013 Hendrik Weimer
 
    This file is part of libquantum
 
@@ -30,7 +30,10 @@
 #include "complex.h"
 #include "config.h"
 
-/* Forth-order Runge-Kutta */
+/* Forth-order Runge-Kutta
+
+Flags: QUANTUM_RK4_NODELETE:  Do not delete quantum_reg returned by H
+       QUANTUM_RK4_IMAGINARY: Imaginary time evolution */
 
 void
 quantum_rk4(quantum_reg *reg, double t, double dt, 
@@ -41,6 +44,7 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   int i;
   void *hash;
   int hashw;
+  COMPLEX_FLOAT step = dt;
 
   hash = reg->hash;
   reg->hash = 0;
@@ -48,36 +52,39 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
   hashw = reg->hashw;
   reg->hashw = 0;
 
+  if(!(flags & QUANTUM_RK4_IMAGINARY))
+    step *= IMAGINARY;
+
   /* k1 */
-  k = quantum_matrix_qureg(H, t, reg, flags);
-  quantum_scalar_qureg(-IMAGINARY*dt/2.0, &k);
+  k = quantum_matrix_qureg(H, t, reg, flags & QUANTUM_RK4_NODELETE);
+  quantum_scalar_qureg(-step/2.0, &k);
   tmp = quantum_vectoradd(reg, &k);
   quantum_scalar_qureg(1.0/3.0, &k);
   out = quantum_vectoradd(reg, &k);
   quantum_delete_qureg(&k);
 
   /* k2 */
-  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags);
+  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags & QUANTUM_RK4_NODELETE);
   quantum_delete_qureg(&tmp);
-  quantum_scalar_qureg(-IMAGINARY*dt/2.0, &k);
+  quantum_scalar_qureg(-step/2.0, &k);
   tmp = quantum_vectoradd(reg, &k);
   quantum_scalar_qureg(2.0/3.0, &k);
   quantum_vectoradd_inplace(&out, &k);
   quantum_delete_qureg(&k);
 
   /* k3 */
-  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags);
+  k = quantum_matrix_qureg(H, t+dt/2.0, &tmp, flags & QUANTUM_RK4_NODELETE);
   quantum_delete_qureg(&tmp);
-  quantum_scalar_qureg(-IMAGINARY*dt, &k);
+  quantum_scalar_qureg(-step, &k);
   tmp = quantum_vectoradd(reg, &k);
   quantum_scalar_qureg(1.0/3.0, &k);
   quantum_vectoradd_inplace(&out, &k);
   quantum_delete_qureg(&k);
 
   /* k4 */
-  k = quantum_matrix_qureg(H, t+dt, &tmp, flags);
+  k = quantum_matrix_qureg(H, t+dt, &tmp, flags & QUANTUM_RK4_NODELETE);
   quantum_delete_qureg(&tmp);
-  quantum_scalar_qureg(-IMAGINARY*dt/6.0, &k);
+  quantum_scalar_qureg(-step/6.0, &k);
   quantum_vectoradd_inplace(&out, &k);
   
   quantum_delete_qureg(&k);
@@ -85,10 +92,14 @@ quantum_rk4(quantum_reg *reg, double t, double dt,
 
   /* Normalize quantum register */
 
-  for(i=0; i<out.size; i++)
-    r += quantum_prob(out.node[i].amplitude);
+  if(flags & QUANTUM_RK4_IMAGINARY)
+    {
 
-  //  quantum_scalar_qureg(sqrt(1.0/r), &out);
+      for(i=0; i<out.size; i++)
+	r += quantum_prob(out.amplitude[i]);
+
+      quantum_scalar_qureg(sqrt(1.0/r), &out);
+    }
 
   out.hash = hash;
   out.hashw = hashw;
@@ -130,10 +141,8 @@ quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon,
 
       for(i=0;i<reg->size;i++)
 	{
-	  r = 2*sqrt(quantum_prob(reg->node[i].amplitude 
-				  - reg2.node[i].amplitude)/
-		     quantum_prob(reg->node[i].amplitude 
-				  + reg2.node[i].amplitude));
+	  r = 2*sqrt(quantum_prob(reg->amplitude[i] - reg2.amplitude[i])/
+		     quantum_prob(reg->amplitude[i] + reg2.amplitude[i]));
 	  
 	  if(r > delta)
 	    delta = r;
@@ -155,8 +164,14 @@ quantum_rk4a(quantum_reg *reg, double t, double *dt, double epsilon,
 
       if(delta > epsilon)
 	{
-	  memcpy(reg->node, old.node, reg->size*sizeof(quantum_reg_node));
-	  memcpy(reg2.node, old.node, reg->size*sizeof(quantum_reg_node));
+	  memcpy(reg->amplitude, old.amplitude, 
+		 reg->size*sizeof(COMPLEX_FLOAT));
+	  memcpy(reg2.amplitude, old.amplitude, 
+		 reg->size*sizeof(COMPLEX_FLOAT));
+	  if(reg->state && old.state)
+	    memcpy(reg->state, old.state, reg->size*sizeof(MAX_UNSIGNED));
+	  if(reg2.state && old.state)
+	    memcpy(reg2.state, old.state, reg->size*sizeof(MAX_UNSIGNED));
 	}
       
     } while(delta > epsilon);

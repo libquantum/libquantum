@@ -64,9 +64,9 @@ quantum_measure(quantum_reg reg)
 	 given base state - r, return the base state as the
 	 result. Otherwise, continue with the next base state. */
 
-      r -= quantum_prob_inline(reg.node[i].amplitude);
+      r -= quantum_prob_inline(reg.amplitude[i]);
       if(0 >= r)
-	return reg.node[i].state;
+	return reg.state[i];
     }
 
   /* The sum of all probabilities is less than 1. Usually, the cause
@@ -100,8 +100,8 @@ quantum_bmeasure(int pos, quantum_reg *reg)
 
   for(i=0; i<reg->size; i++)
     {
-      if(!(reg->node[i].state & pos2))
-	pa += quantum_prob_inline(reg->node[i].amplitude);
+      if(!(reg->state[i] & pos2))
+	pa += quantum_prob_inline(reg->amplitude[i]);
     }
 
   /* Compare the probability for 0 with a random number and determine
@@ -141,8 +141,8 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
 
   for(i=0; i<reg->size; i++)
     {
-      if(!(reg->node[i].state & pos2))
-	pa += quantum_prob_inline(reg->node[i].amplitude);
+      if(!(reg->state[i] & pos2))
+	pa += quantum_prob_inline(reg->amplitude[i]);
     }
 
   /* Compare the probability for 0 with a random number and determine
@@ -158,23 +158,23 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
 
   for(i=0;i<reg->size;i++)
     {
-      if(reg->node[i].state & pos2)
+      if(reg->state[i] & pos2)
 	{
 	  if(!result)
-	    reg->node[i].amplitude = 0;
+	    reg->amplitude[i] = 0;
 	  else
 	    {
-	      d += quantum_prob_inline(reg->node[i].amplitude);
+	      d += quantum_prob_inline(reg->amplitude[i]);
 	      size++;
 	    }
 	}
       else
 	{
 	  if(result)
-	    reg->node[i].amplitude = 0;
+	    reg->amplitude[i] = 0;
 	  else
 	    {
-	      d += quantum_prob_inline(reg->node[i].amplitude);
+	      d += quantum_prob_inline(reg->amplitude[i]);
 	      size++;
 	    }
 	}
@@ -183,12 +183,14 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
   /* Build the new quantum register */
 
   out.size = size;
-  out.node = calloc(size, sizeof(quantum_reg_node));
+  out.state = calloc(size, sizeof(MAX_UNSIGNED));
+  out.amplitude = calloc(size, sizeof(COMPLEX_FLOAT));
 
-  if(!out.node)
+  if(!(out.state && out.amplitude))
     quantum_error(QUANTUM_ENOMEM);
 
-  quantum_memman(size * sizeof(quantum_reg_node));
+  quantum_memman(size * (sizeof(MAX_UNSIGNED) + sizeof(COMPLEX_FLOAT)));
+
   out.hashw = reg->hashw;
   out.hash = reg->hash;
   out.width = reg->width;
@@ -198,10 +200,10 @@ quantum_bmeasure_bitpreserve(int pos, quantum_reg *reg)
   
   for(i=0, j=0; i<reg->size; i++)
     {
-      if(reg->node[i].amplitude)
+      if(reg->amplitude[i])
 	{
-	  out.node[j].state = reg->node[i].state;
-	  out.node[j].amplitude = reg->node[i].amplitude * 1 / (float) sqrt(d);
+	  out.state[j] = reg->state[i];
+	  out.amplitude[j] = reg->amplitude[i] * 1 / (float) sqrt(d);
 	
 	  j++;
 	}

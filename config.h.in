@@ -94,4 +94,7 @@
 /* Define to 1 if you have LAPACK */
 #undef HAVE_LIBLAPACK
 
+/* Define to 1 if using double precision */
+#undef USE_DOUBLE
+
 #include "types.h"

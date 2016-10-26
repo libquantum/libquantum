@@ -1,6 +1,6 @@
-/* time.c: Declarations for lapack.h
+/* lapack.h: Declarations for lapack.c
 
-   Copyright 2006 Bjoern Butscher, Hendrik Weimer
+   Copyright 2006-2013 Hendrik Weimer
 
    This file is part of libquantum
 
@@ -29,8 +29,14 @@
 #include "matrix.h"
 #include "qureg.h"
 
-extern void quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt, 
+#ifdef USE_DOUBLE
+#define QUANTUM_LAPACK_SOLVER zheev_
+#else
+#define QUANTUM_LAPACK_SOLVER cheev_
+#endif
+
+extern void quantum_diag_time(double t, quantum_reg *reg0, quantum_reg *regt, 
 			      quantum_reg *tmp1, quantum_reg *tmp2, 
-			      quantum_matrix H, float **w);
+			      quantum_matrix H, REAL_FLOAT **w);
 
 #endif

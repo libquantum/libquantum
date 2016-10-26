@@ -336,16 +336,30 @@ quantum_objcode_run(char *file, quantum_reg *reg)
       switch(operation)
 	{
 	case INIT:
-	  fread(buf, sizeof(MAX_UNSIGNED), 1, fhd);
+	  if(!fread(buf, sizeof(MAX_UNSIGNED), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  mu = quantum_char2mu(buf);
 	  *reg = quantum_new_qureg(mu, 12);
+
 	  break;
 
 	case CNOT:
 	case COND_PHASE:
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  j = quantum_char2int(buf);
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
+	  
 	  k = quantum_char2int(buf);
 	  switch(operation)
 	    {
@@ -357,11 +371,23 @@ quantum_objcode_run(char *file, quantum_reg *reg)
 	  break;
 
 	case TOFFOLI:
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  j = quantum_char2int(buf);
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  k = quantum_char2int(buf);
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  l = quantum_char2int(buf);
 	  quantum_toffoli(j, k, l, reg);
 	  break;
@@ -373,7 +399,11 @@ quantum_objcode_run(char *file, quantum_reg *reg)
 	case BMEASURE:
 	case BMEASURE_P:
 	case SWAPLEADS:
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  j = quantum_char2int(buf);
 	  switch(operation)
 	    {
@@ -399,9 +429,17 @@ quantum_objcode_run(char *file, quantum_reg *reg)
 	case ROT_Z:
 	case PHASE_KICK:
 	case PHASE_SCALE:
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  j = quantum_char2int(buf);
-	  fread(buf, sizeof(double), 1, fhd);
+	  if(!fread(buf, sizeof(double), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  d = quantum_char2double(buf);
 	  switch(operation)
 	    {
@@ -419,11 +457,23 @@ quantum_objcode_run(char *file, quantum_reg *reg)
 	  break;
 
 	case CPHASE_KICK:
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))	
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  j = quantum_char2int(buf);
-	  fread(buf, sizeof(int), 1, fhd);
+	  if(!fread(buf, sizeof(int), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  k = quantum_char2int(buf);
-	  fread(buf, sizeof(double), 1, fhd);
+	  if(!fread(buf, sizeof(double), 1, fhd))
+	    {
+	      quantum_error(QUANTUM_FAILURE);
+	      break;
+	    }
 	  d = quantum_char2double(buf);
 	  quantum_cond_phase_kick(j, k, d, reg);
 	  break;

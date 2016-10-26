@@ -1,6 +1,6 @@
 /* qtime.h: Declarations for qtime.c
 
-   Copyright 2006,2007 Bjoern Butscher, Hendrik Weimer
+   Copyright 2006-2013 Hendrik Weimer
 
    This file is part of libquantum
 
@@ -27,6 +27,11 @@
 
 #include "qureg.h"
 #include "config.h"
+
+enum {
+  QUANTUM_RK4_NODELETE  = 1,
+  QUANTUM_RK4_IMAGINARY = 2
+};
 
 extern void quantum_rk4(quantum_reg *reg, double t, double dt, 
 			quantum_reg H(MAX_UNSIGNED, double), int flags);

@@ -1,6 +1,6 @@
 /* qureg.h: Declarations for qureg.c and inline hashing functions
 
-   Copyright 2003, 2004 Bjoern Butscher, Hendrik Weimer
+   Copyright 2003-2013 Bjoern Butscher, Hendrik Weimer
 
    This file is part of libquantum
 
@@ -31,16 +31,6 @@
 #include "matrix.h"
 #include "error.h"
 
-/* Representation of a base state of a quantum register: alpha_j |j> */
-
-struct quantum_reg_node_struct
-{
-  COMPLEX_FLOAT amplitude; /* alpha_j */
-  MAX_UNSIGNED state;      /* j */
-};
-
-typedef struct quantum_reg_node_struct quantum_reg_node;
-
 /* The quantum register */
 
 struct quantum_reg_struct
@@ -48,7 +38,8 @@ struct quantum_reg_struct
   int width;    /* number of qubits in the qureg */
   int size;     /* number of non-zero vectors */
   int hashw;    /* width of the hash array */
-  quantum_reg_node *node;
+  COMPLEX_FLOAT *amplitude;
+  MAX_UNSIGNED *state;
   int *hash;
 };
 
@@ -57,6 +48,7 @@ typedef struct quantum_reg_struct quantum_reg;
 extern quantum_reg quantum_matrix2qureg(quantum_matrix *m, int width);
 extern quantum_reg quantum_new_qureg(MAX_UNSIGNED initval, int width);
 extern quantum_reg quantum_new_qureg_size(int n, int width);
+extern quantum_reg quantum_new_qureg_sparse(int n, int width);
 extern quantum_matrix quantum_qureg2matrix(quantum_reg reg);
 extern void quantum_destroy_hash(quantum_reg *reg);
 extern void quantum_delete_qureg(quantum_reg *reg);
@@ -84,6 +76,7 @@ extern void quantum_scalar_qureg(COMPLEX_FLOAT r, quantum_reg *reg);
 extern void quantum_mvmult(quantum_reg *y, quantum_matrix A, quantum_reg *x);
 
 extern void quantum_print_timeop(int width, void f(quantum_reg *));
+extern void quantum_normalize(quantum_reg *reg);
 
 /* Our 64-bit multiplicative hash function */
 
@@ -114,7 +107,7 @@ quantum_get_state(MAX_UNSIGNED a, quantum_reg reg)
 
   while(reg.hash[i])
     {
-      if(reg.node[reg.hash[i]-1].state == a)
+      if(reg.state[reg.hash[i]-1] == a)
 	return reg.hash[i]-1;
       i++;
       if(i == (1 << reg.hashw))
@@ -168,7 +161,7 @@ quantum_reconstruct_hash(quantum_reg *reg)
   for(i=0; i<(1 << reg->hashw); i++)
     reg->hash[i] = 0;
   for(i=0; i<reg->size; i++)
-    quantum_add_hash(reg->node[i].state, i, reg);
+    quantum_add_hash(reg->state[i], i, reg);
 }
       
 /* Return the reduced bitmask of a basis state */

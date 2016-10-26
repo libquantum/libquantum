@@ -243,34 +243,34 @@ quantum_toffoli_ft(int control1, int control2, int target, quantum_reg *reg)
       c1 = 0;
       c2 = 0;
 
-      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control1))
+      if(reg->state[i] & ((MAX_UNSIGNED) 1 << control1))
 	c1 = 1;
-      if(reg->node[i].state 
+      if(reg->state[i] 
 	 & ((MAX_UNSIGNED) 1 << (control1+width)))
 	{
 	  c1 ^= 1;
 	}
-      if(reg->node[i].state 
+      if(reg->state[i] 
 	 & ((MAX_UNSIGNED) 1 << (control1+2*width)))
 	{
 	  c1 ^= 1;
 	}
 
-      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << control2))
+      if(reg->state[i] & ((MAX_UNSIGNED) 1 << control2))
 	c2 = 1;
-      if(reg->node[i].state 
+      if(reg->state[i] 
 	 & ((MAX_UNSIGNED) 1 << (control2+width)))
 	{
 	  c2 ^= 1;
 	}
-      if(reg->node[i].state 
+      if(reg->state[i] 
 	 & ((MAX_UNSIGNED) 1 << (control2+2*width)))
 	{
 	  c2 ^= 1;
 	}
 
       if(c1 == 1 && c2 == 1)
-	reg->node[i].state = reg->node[i].state ^ mask;
+	reg->state[i] = reg->state[i] ^ mask;
 
     }
 

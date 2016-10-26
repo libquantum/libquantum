@@ -66,7 +66,8 @@ quantum_new_density_op(int num, float *prob, quantum_reg *reg)
 
   reg[0].size = 0;
   reg[0].width = 0;
-  reg[0].node = 0;
+  reg[0].state = 0;
+  reg[0].amplitude = 0;
   reg[0].hash = 0;
 
   for(i=1; i<num; i++)
@@ -78,7 +79,8 @@ quantum_new_density_op(int num, float *prob, quantum_reg *reg)
 
       reg[i].size = 0;
       reg[i].width = 0;
-      reg[i].node = 0;
+      reg[i].state = 0;
+      reg[i].amplitude = 0;
       reg[i].hash = 0;
     }
 
@@ -133,8 +135,8 @@ quantum_reduced_density_op(int pos, quantum_density_op *rho)
   
       for(j=0; j<rho->reg[i].size; j++)
 	{
-	  if(!(rho->reg[i].node[j].state & pos2))
-	    p0 += quantum_prob_inline(rho->reg[i].node[j].amplitude);
+	  if(!(rho->reg[i].state[j] & pos2))
+	    p0 += quantum_prob_inline(rho->reg[i].amplitude[j]);
 	}
 
       rho->prob[i] = ptmp * p0;
@@ -176,8 +178,8 @@ quantum_density_matrix(quantum_density_op *rho)
 	      l1 = quantum_get_state(i, rho->reg[k]);
 	      l2 = quantum_get_state(j, rho->reg[k]);
 	      if((l1 > -1) && (l2 > -1))
-		M(m, i, j) += rho->prob[k] * rho->reg[k].node[l2].amplitude
-		  * quantum_conj(rho->reg[k].node[l1].amplitude);
+		M(m, i, j) += rho->prob[k] * rho->reg[k].amplitude[l2]
+		  * quantum_conj(rho->reg[k].amplitude[l1]);
 	    }
 	}
     }
@@ -246,14 +248,14 @@ quantum_purity(quantum_density_op *rho)
 	      /* quantum_dot_product makes sure that rho->reg[j] has a
 		 correct hash table */
 
-	      l = quantum_get_state(rho->reg[i].node[k].state, rho->reg[j]);
+	      l = quantum_get_state(rho->reg[i].state[k], rho->reg[j]);
 
 	      /* Compute p_i p_j <k|\psi_iX\psi_i|\psi_jX\psi_j|k> */
 	      
 	      if(l > -1)
 		g = rho->prob[i] * rho->prob[j] * dp 
-		  * rho->reg[i].node[k].amplitude
-		  * quantum_conj(rho->reg[j].node[l].amplitude);
+		  * rho->reg[i].amplitude[k]
+		  * quantum_conj(rho->reg[j].amplitude[l]);
 	      else
 		g = 0;
 

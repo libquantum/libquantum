@@ -1,3 +1,12 @@
+libquantum 1.1.1:
+	- Added support for ground state calculations
+	- Added example program simulating the tranverse Ising chain
+	- Optimized memory layout for quantum registers (thanks to
+          Acumem, breaks backward compatiblity)
+	- Added OpenMP support
+	- Improved C99 compatibility for complex numbers
+	- Improved support of double precision arithmetic
+
 libquantum 1.1.0:
 	- Added exact diagonlization based on LAPACK
 	- Added flag in quantum_rk4 to preserve qureg (breaks backward 

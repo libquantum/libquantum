@@ -89,7 +89,17 @@ void
 quantum_print_matrix(quantum_matrix m) 
 {
   int i, j, z=0;
+  int print_imag = 0;
   /* int l; */
+
+  for(i=0; i<m.rows; i++) 
+    {
+      for(j=0; j<m.cols; j++)
+	{
+	  if(quantum_imag(M(m, j, i))/quantum_real(M(m, j, i)) > 1e-3)
+	    print_imag = 1;
+	}
+    }
 
   while ((1 << z++) < m.rows);
   z--;
@@ -104,8 +114,15 @@ quantum_print_matrix(quantum_matrix m)
 	  } */
 
       for(j=0; j<m.cols; j++)
-	printf("%g %+gi ", quantum_real(M(m, j, i)), 
-	       quantum_imag(M(m, j, i)));
+	{
+	  if(print_imag)
+	    printf("%3.3f%+.3fi ", quantum_real(M(m, j, i)), 
+		   quantum_imag(M(m, j, i)));
+	  else
+	    //	    printf("%3.3f ", quantum_real(M(m, j, i)));
+	    printf("%+.1f ", quantum_real(M(m, j, i)));
+	}
+	    
       printf("\n");
     }
   printf("\n");

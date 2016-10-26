@@ -114,13 +114,13 @@ quantum_decohere(quantum_reg *reg)
 
 	  for(j=0; j<reg->width; j++)
 	    {
-	      if(reg->node[i].state & ((MAX_UNSIGNED) 1 << j))
+	      if(reg->state[i] & ((MAX_UNSIGNED) 1 << j))
 		angle += nrands[j];
 	      else
 		angle -= nrands[j];
 	    }
 
-	  reg->node[i].amplitude *= quantum_cexp(angle);
+	  reg->amplitude[i] *= quantum_cexp(angle);
 	  
 	}
       free(nrands);

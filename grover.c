@@ -145,6 +145,7 @@ int main(int argc, char **argv)
     width = quantum_getwidth(N+1);
 
   reg = quantum_new_qureg(0, width);
+  //  reg.width--;
 
   quantum_sigma_x(reg.width, &reg);
 
@@ -169,9 +170,9 @@ int main(int argc, char **argv)
   
   for(i=0; i<reg.size; i++)
     {
-      if(reg.node[i].state == N)
+      if(reg.state[i] == N)
 	printf("\nFound %i with a probability of %f\n\n", N, 
-	       quantum_prob(reg.node[i].amplitude));
+	       quantum_prob(reg.amplitude[i]));
     }
 
   quantum_delete_qureg(&reg);

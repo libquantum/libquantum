@@ -1,6 +1,6 @@
 /* lapack.c: LAPACK interface
 
-   Copyright 2008 Bjoern Butscher, Hendrik Weimer
+   Copyright 2008-2013 Hendrik Weimer
 
    This file is part of libquantum
 
@@ -22,6 +22,7 @@
 */
 
 #include <stdlib.h>
+#include <math.h>
 
 #include "lapack.h"
 #include "matrix.h"
@@ -34,10 +35,14 @@ extern void cheev_(char *jobz, char *uplo, int *n, float _Complex *A, int *lda,
 		   float *w, float _Complex *work, int *lwork, float *rwork,
 		   int *info);
 
+extern void zheev_(char *jobz, char *uplo, int *n, double _Complex *A, int *lda,
+		   double *w, double _Complex *work, int *lwork, double *rwork,
+		   int *info);
+
 void 
-quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt, 
+quantum_diag_time(double t, quantum_reg *reg0, quantum_reg *regt, 
 		  quantum_reg *tmp1, quantum_reg *tmp2, quantum_matrix H, 
-		  float **w)
+		  REAL_FLOAT **w)
 {
 #ifdef HAVE_LIBLAPACK
   char jobz = 'V';
@@ -45,32 +50,39 @@ quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt,
   int dim = H.cols;
   COMPLEX_FLOAT *work;
   int lwork = -1;
-  float rwork[3*dim-2];
+  REAL_FLOAT rwork[3*dim-2];
   int info;
-  int i;
+  int i, j;
   void *p;
   
   if(tmp2->size != reg0->size)
     {
       /* perform diagonalization */
 
-      p = regt->node;
-      *regt = *reg0;
-      regt->node = realloc(p, regt->size*sizeof(quantum_reg_node));
-      for(i=0; i<reg0->size; i++)
-	regt->node[i].state = i;
-      
-      p = tmp1->node;
-      *tmp1 = *reg0;
-      tmp1->node = realloc(p, regt->size*sizeof(quantum_reg_node));
-      for(i=0; i<reg0->size; i++)
-	tmp1->node[i].state = i;
+      for(i=0; i<dim; i++)
+	{
+	  for(j=0; j<dim; j++)
+	    {
+	      if(sqrt(quantum_prob(M(H, i, j) - quantum_conj(M(H, j, i)))) 
+		 > 1e-6)
+		quantum_error(QUANTUM_EHERMITIAN);
+	    }
+	}
 
-      p = tmp2->node;
+      p = regt->amplitude;
+      *regt = *reg0;
+      regt->amplitude = realloc(p, regt->size*sizeof(COMPLEX_FLOAT));
+      
+      p = tmp1->amplitude;
+      *tmp1 = *reg0;
+      tmp1->amplitude = realloc(p, regt->size*sizeof(COMPLEX_FLOAT));
+
+      p = tmp2->amplitude;
       *tmp2 = *reg0;
-      tmp2->node = realloc(p, regt->size*sizeof(quantum_reg_node));
-      for(i=0; i<reg0->size; i++)
-	tmp2->node[i].state = i;
+      tmp2->amplitude = realloc(p, regt->size*sizeof(COMPLEX_FLOAT));
+
+      if(!(regt->amplitude && tmp1->amplitude && tmp2->amplitude))
+	quantum_error(QUANTUM_ENOMEM);
 
       *w = malloc(dim*sizeof(float));
 
@@ -82,13 +94,14 @@ quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt,
       if(!work)
 	quantum_error(QUANTUM_ENOMEM);
 
-      cheev_(&jobz, &uplo, &dim, H.t, &dim, *w, work, &lwork, rwork, &info);
+      QUANTUM_LAPACK_SOLVER(&jobz, &uplo, &dim, H.t, &dim, *w, work, &lwork, 
+			    rwork, &info);
 
       if(info < 0)
 	quantum_error(QUANTUM_ELAPACKARG);
 
       else if(info > 0)
-	quantum_error(QUANTUM_ELAPACKCHEEV);
+	quantum_error(QUANTUM_ELAPACKCONV);
       
       lwork = (int) work[0];
       work = realloc(work, lwork*sizeof(COMPLEX_FLOAT));
@@ -96,13 +109,14 @@ quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt,
       if(!work)
 	quantum_error(QUANTUM_ENOMEM);
 
-      cheev_(&jobz, &uplo, &dim, H.t, &dim, *w, work, &lwork, rwork, &info);
+      QUANTUM_LAPACK_SOLVER(&jobz, &uplo, &dim, H.t, &dim, *w, work, &lwork, 
+			    rwork, &info);
 
       if(info < 0)
 	quantum_error(QUANTUM_ELAPACKARG);
 
       else if(info > 0)
-	quantum_error(QUANTUM_ELAPACKCHEEV);
+	quantum_error(QUANTUM_ELAPACKCONV);
       
       free(work);
 
@@ -113,17 +127,13 @@ quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt,
 
   if(tmp1->size != reg0->size)
     {
-      p = regt->node;
+      p = regt->amplitude;
       *regt = *reg0;
-      regt->node = realloc(p, regt->size*sizeof(quantum_reg_node));
-      for(i=0; i<reg0->size; i++)
-	regt->node[i].state = i;
+      regt->amplitude = realloc(p, regt->size*sizeof(COMPLEX_FLOAT));
 
-      p = tmp1->node;
+      p = tmp1->amplitude;
       *tmp1 = *reg0;
-      tmp1->node = realloc(p, regt->size*sizeof(quantum_reg_node));
-      for(i=0; i<reg0->size; i++)
-	tmp1->node[i].state = i;
+      tmp1->amplitude = realloc(p, regt->size*sizeof(COMPLEX_FLOAT));
 
       quantum_adjoint(&H);
       
@@ -133,7 +143,7 @@ quantum_diag_time(float t, quantum_reg *reg0, quantum_reg *regt,
     }
 
   for(i=0; i<dim; i++)
-    tmp2->node[i].amplitude = quantum_cexp(-(*w)[i]*t)*tmp1->node[i].amplitude;
+    tmp2->amplitude[i] = quantum_cexp(-(*w)[i]*t)*tmp1->amplitude[i];
 
   quantum_mvmult(regt, H, tmp2);
 

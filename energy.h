@@ -1,6 +1,6 @@
-/* types.h: Data types for libquantum
+/* energy.h: Declarations for energy.c
 
-   Copyright 2003 Bjoern Butscher, Hendrik Weimer
+   Copyright 2013 Hendrik Weimer
 
    This file is part of libquantum
 
@@ -21,24 +21,21 @@
 
 */
 
-#ifndef __TYPES_H
+#ifndef __ENERGY_H
 
-#define __TYPES_H
+#define __ENERGY_H
 
-#ifndef COMPLEX_FLOAT
-  #define COMPLEX_FLOAT @CF_TYPE@
-#endif
+#include "config.h"
+#include "qureg.h"
 
-#ifndef REAL_FLOAT
-  #define REAL_FLOAT @RF_TYPE@
-#endif
+enum {
+  QUANTUM_SOLVER_LANCZOS,
+  QUANTUM_SOLVER_LANCZOS_MODIFIED,
+  QUANTUM_SOLVER_IMAGINARY_TIME
+};
 
-#ifndef MAX_UNSIGNED
-  #define MAX_UNSIGNED @MU_TYPE@
-#endif
-
-#ifndef IMAGINARY
-  #define IMAGINARY @I@
-#endif
+extern double quantum_groundstate(quantum_reg *reg, double epsilon, 
+				  quantum_reg H(MAX_UNSIGNED, double), 
+				  int solver, double stepsize);
 
 #endif

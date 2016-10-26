@@ -48,8 +48,8 @@ LIBTOOL=@LIBTOOL@
 
 # Flags passed to C compiler
 
-CFLAGS=@CFLAGS@
-LDFLAGS=-rpath $(LIBDIR) -version-info 7:0:0
+CFLAGS=@CFLAGS@ @OPENMP_CFLAGS@
+LDFLAGS=-rpath $(LIBDIR) -version-info 8:0:0
 
 # Dependencies
 
@@ -57,11 +57,11 @@ all:	libquantum.la
 
 libquantum.la: complex.lo measure.lo matrix.lo gates.lo qft.lo classic.lo \
 	qureg.lo decoherence.lo oaddn.lo omuln.lo expn.lo qec.lo version.lo \
-	objcode.lo density.lo error.lo qtime.lo lapack.lo Makefile
+	objcode.lo density.lo error.lo qtime.lo lapack.lo energy.lo Makefile
 	$(LIBTOOL) --mode=link $(CC) $(LDFLAGS) -o libquantum.la complex.lo \
 	measure.lo matrix.lo gates.lo oaddn.lo omuln.lo expn.lo qft.lo \
 	classic.lo qureg.lo decoherence.lo qec.lo version.lo objcode.lo \
-	density.lo error.lo qtime.lo lapack.lo @LIBS@
+	density.lo error.lo qtime.lo lapack.lo energy.lo @LIBS@
 
 complex.lo: complex.c complex.h config.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c complex.c
@@ -123,6 +123,9 @@ qtime.lo: qtime.c qtime.h qureg.h Makefile
 lapack.lo: lapack.c lapack.h matrix.h qureg.h config.h error.h Makefile
 	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c lapack.c
 
+energy.lo: energy.c energy.h qureg.h config.h error.h Makefile
+	$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) -c energy.c
+
 # Autoconf stuff
 
 Makefile: config.status Makefile.in aclocal.m4 config.h.in types.h.in \
@@ -140,7 +143,7 @@ config.status: configure
 
 # Build demos of Shor's and Grover's algorithms
 
-demos: shor grover
+demos: shor grover ising
 
 shor: libquantum.la shor.c Makefile
 	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o shor shor.c -I./ -lquantum \
@@ -149,6 +152,10 @@ shor: libquantum.la shor.c Makefile
 grover: libquantum.la grover.c Makefile
 	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o grover grover.c -I./ \
 	-lquantum -static -lm
+
+ising:	libquantum.la ising.c Makefile
+	$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -o ising ising.c -I./ -lquantum \
+	-static -lm
 
 # Quantum object code tools
 
